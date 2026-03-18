@@ -1,5 +1,5 @@
-exchange,ticker,units
-ASX,A200,30
-ASX,IOZ,20
-ASX,CBA,12
-NASDAQ,MSFT,6
+exchange,ticker,units,is_index
+ASX,A200,30,true
+ASX,IOZ,20,true
+ASX,CBA,12,false
+NASDAQ,MSFT,6,false

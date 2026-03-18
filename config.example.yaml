@@ -3,8 +3,11 @@ ports:
   frontend: 15173
 
 # Copy this file to config.yaml and update the portfolio CSV paths for your setup.
+# Portfolio CSV columns must be: exchange,ticker,units,is_index
 portfolios:
   - name: Core Portfolio
     csv_path: ./sample-data/core-portfolio.csv
   - name: Income Portfolio
     csv_path: ./sample-data/income-portfolio.csv
+  # - name: Personal Portfolio
+  #   csv_path: ./user-data/my-portfolio.csv

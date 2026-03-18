@@ -1,5 +1,5 @@
-exchange,ticker,units
-ASX,CLNE,46908
-ASX,GOLD,1521
-ASX,VESG,28247
-ASX,VGE,5614
+exchange,ticker,units,is_index
+ASX,CLNE,46908,true
+ASX,GOLD,1521,false
+ASX,VESG,28247,true
+ASX,VGE,5614,true

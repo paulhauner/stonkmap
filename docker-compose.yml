@@ -11,6 +11,7 @@ services:
       - "18000:8000"
     volumes:
       - stonkmap-data:/app/data
+      - ./user-data:/app/user-data
 
   web:
     build:
@@ -22,6 +23,8 @@ services:
       - api
     ports:
       - "15173:80"
+    volumes:
+      - ./user-data:/app/user-data
 
 volumes:
   stonkmap-data:

@@ -2,6 +2,14 @@ export type Holding = {
   exchange: string;
   ticker: string;
   units: string;
+  is_index: boolean;
+};
+
+export type UnknownIndex = {
+  portfolio_name: string;
+  exchange: string;
+  ticker: string;
+  units: string;
 };
 
 export type CompanyExposure = {
@@ -47,11 +55,13 @@ export type PortfolioBreakdown = {
   total_market_value: string;
   last_price_at: string | null;
   companies: CompanyExposure[];
+  unknown_indexes: UnknownIndex[];
 };
 
 export type DashboardData = {
   generated_at: string;
   indexes: IndexBreakdown[];
   portfolios: PortfolioBreakdown[];
+  unknown_indexes: UnknownIndex[];
   prices_last_updated_at: string | null;
 };

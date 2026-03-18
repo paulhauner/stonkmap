@@ -1,0 +1,39 @@
+{
+  "statusCode": 200,
+  "message": "Retrieved fund successfully",
+  "data": [
+    {
+      "ticker": "NVDA",
+      "marketValPercent": 6.0963,
+      "name": "NVIDIA Corp",
+      "longName": "NVIDIA Corp",
+      "sectorName": "Technology Hardware & Equipment",
+      "marketValue": 80811912,
+      "units": 325022,
+      "countryCode": "US",
+      "effectiveDate": "2026-02-28"
+    },
+    {
+      "ticker": "AAPL",
+      "marketValPercent": 5.66136,
+      "name": "Apple Inc",
+      "longName": "Apple Inc",
+      "sectorName": "Technology Hardware & Equipment",
+      "marketValue": 75046417,
+      "units": 202445,
+      "countryCode": "US",
+      "effectiveDate": "2026-02-28"
+    },
+    {
+      "ticker": "MSFT",
+      "marketValPercent": 4.28444,
+      "name": "Microsoft Corp",
+      "longName": "Microsoft Corp",
+      "sectorName": "Software & Computer Services",
+      "marketValue": 56794087,
+      "units": 103056,
+      "countryCode": "US",
+      "effectiveDate": "2026-02-28"
+    }
+  ]
+}

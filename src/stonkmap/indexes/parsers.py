@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import csv
 import io
+import json
 import re
 import xml.etree.ElementTree as ET
 from datetime import datetime
@@ -27,10 +28,10 @@ class ParsedHoldings(BaseModel):
 ParserFn = Callable[[str], ParsedHoldings]
 
 
-def _parse_decimal(value: str | None) -> Decimal | None:
+def _parse_decimal(value: object | None) -> Decimal | None:
     if value is None:
         return None
-    stripped = value.strip().replace(",", "")
+    stripped = str(value).strip().replace(",", "")
     if not stripped:
         return None
     return Decimal(stripped)
@@ -38,7 +39,13 @@ def _parse_decimal(value: str | None) -> Decimal | None:
 
 def _parse_date(value: str) -> datetime:
     stripped = value.strip()
-    for pattern in ("%Y-%m-%d", "%d-%b-%Y", "%d-%B-%Y"):
+    for pattern in (
+        "%Y-%m-%d",
+        "%d-%b-%Y",
+        "%d-%B-%Y",
+        "%Y-%m-%dT%H:%M:%S",
+        "%m/%d/%Y %H:%M:%S",
+    ):
         try:
             return datetime.strptime(stripped, pattern)
         except ValueError:
@@ -176,7 +183,81 @@ def parse_blackrock_spreadsheet_xml(content: str) -> ParsedHoldings:
     return ParsedHoldings(as_of=as_of, constituents=constituents)
 
 
+def parse_vanguard_personal_json(content: str) -> ParsedHoldings:
+    payload = json.loads(content)
+    items = payload.get("data") or []
+    if not isinstance(items, list) or not items:
+        raise ValueError("Vanguard holdings payload does not include any constituents")
+
+    as_of = _parse_date(str(items[0].get("effectiveDate", "")).strip())
+    constituents: list[Constituent] = []
+
+    for item in items:
+        raw_ticker = str(item.get("ticker") or "").strip().upper()
+        if not raw_ticker:
+            continue
+        constituents.append(
+            Constituent(
+                ticker=raw_ticker,
+                exchange=None,
+                source_ticker=raw_ticker,
+                source_exchange_code=str(item.get("countryCode") or "").strip().upper() or None,
+                name=str(item.get("longName") or item.get("name") or raw_ticker).strip(),
+                asset_class="Equity",
+                sector=str(item.get("sectorName") or "").strip() or None,
+                country=str(item.get("countryCode") or "").strip() or None,
+                currency=None,
+                weight_percentage=_parse_decimal(item.get("marketValPercent")) or Decimal("0"),
+                units_held=_parse_decimal(item.get("units")),
+                market_value=_parse_decimal(item.get("marketValue")),
+            )
+        )
+
+    return ParsedHoldings(as_of=as_of, constituents=constituents)
+
+
+def parse_vaneck_fund_dataset_json(content: str) -> ParsedHoldings:
+    payload = json.loads(content)
+    holdings_lists = payload.get("HoldingsList") or []
+    if not isinstance(holdings_lists, list) or not holdings_lists:
+        raise ValueError("VanEck dataset payload is missing HoldingsList")
+
+    first_list = holdings_lists[0]
+    as_of = _parse_date(str(first_list.get("AsOfDate", "")).strip())
+    constituents: list[Constituent] = []
+
+    for item in first_list.get("Holdings", []):
+        source_ticker = (
+            str(item.get("Label") or item.get("HoldingTicker") or item.get("Ticker") or "").strip()
+        )
+        if not source_ticker:
+            continue
+        ticker, source_exchange_code = _split_source_ticker(source_ticker)
+        if not ticker:
+            continue
+        constituents.append(
+            Constituent(
+                ticker=ticker,
+                exchange=exchange_from_source_code(source_exchange_code),
+                source_ticker=source_ticker,
+                source_exchange_code=source_exchange_code,
+                name=str(item.get("HoldingName") or ticker).strip(),
+                asset_class=str(item.get("AssetClass") or "").strip() or None,
+                sector=str(item.get("Sector") or "").strip() or None,
+                country=str(item.get("Country") or "").strip() or None,
+                currency=str(item.get("CurrencyCode") or "").strip() or None,
+                weight_percentage=_parse_decimal(item.get("Weight")) or Decimal("0"),
+                units_held=_parse_decimal(item.get("Shares")),
+                market_value=_parse_decimal(item.get("MV")),
+            )
+        )
+
+    return ParsedHoldings(as_of=as_of, constituents=constituents)
+
+
 PARSER_REGISTRY: dict[str, ParserFn] = {
     "betashares_csv": parse_betashares_csv,
     "blackrock_spreadsheet_xml": parse_blackrock_spreadsheet_xml,
+    "vanguard_personal_json": parse_vanguard_personal_json,
+    "vaneck_fund_dataset_json": parse_vaneck_fund_dataset_json,
 }

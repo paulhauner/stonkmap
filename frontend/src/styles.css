@@ -282,6 +282,11 @@ a {
   background: rgba(15, 23, 42, 0.84);
 }
 
+.warning-card {
+  border-color: rgba(251, 191, 36, 0.28);
+  background: linear-gradient(180deg, rgba(120, 53, 15, 0.22), rgba(15, 23, 42, 0.84));
+}
+
 .panel-header {
   display: flex;
   justify-content: space-between;
@@ -324,6 +329,35 @@ a {
   border-radius: 16px;
   background: rgba(30, 41, 59, 0.84);
   border: 1px solid rgba(248, 250, 252, 0.07);
+}
+
+.warning-chip {
+  background: rgba(120, 53, 15, 0.38);
+}
+
+.copy-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.copy-hint {
+  color: #cbd5e1;
+  font-size: 0.88rem;
+}
+
+.copy-prompt {
+  width: 100%;
+  min-height: 220px;
+  resize: vertical;
+  border: 1px solid rgba(248, 250, 252, 0.12);
+  border-radius: 16px;
+  padding: 14px 16px;
+  background: rgba(15, 23, 42, 0.78);
+  color: #e2e8f0;
+  font: inherit;
+  line-height: 1.45;
 }
 
 .holding-chip span {

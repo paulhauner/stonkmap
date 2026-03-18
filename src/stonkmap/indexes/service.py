@@ -26,8 +26,9 @@ class HttpDocumentStore(DocumentStore):
                     "AppleWebKit/537.36 (KHTML, like Gecko) "
                     "Chrome/124.0.0.0 Safari/537.36"
                 ),
-                "Accept": "text/csv,application/xml,text/xml,text/plain,*/*",
+                "Accept": "application/json,text/csv,application/xml,text/xml,text/plain,*/*",
                 "Accept-Language": "en-AU,en;q=0.9",
+                "Referer": "https://www.vanguard.com.au/personal/",
             },
         )
 

@@ -1,0 +1,56 @@
+{
+  "NAV": "$8.64",
+  "Total Net Assets": "$78.33M",
+  "HoldingsList": [
+    {
+      "AsOfDate": "2026-03-17T00:00:00",
+      "Holdings": [
+        {
+          "Ticker": "CLNEAU",
+          "PortfolioTicker": "CLNEAU",
+          "HoldingTicker": "",
+          "Label": "ENLT IT",
+          "HoldingName": "Enlight Renewable Energy Ltd",
+          "Weight": "6.02",
+          "Shares": "45,087",
+          "MV": "4,716,733",
+          "CurrencyCode": "ILS",
+          "Country": "Israel",
+          "Sector": "Utilities",
+          "AssetClass": "Stock",
+          "AsOfDate": "03/17/2026 00:00:00"
+        },
+        {
+          "Ticker": "CLNEAU",
+          "PortfolioTicker": "CLNEAU",
+          "HoldingTicker": "",
+          "Label": "BE US",
+          "HoldingName": "Bloom Energy Corp",
+          "Weight": "5.98",
+          "Shares": "20,781",
+          "MV": "4,685,495",
+          "CurrencyCode": "USD",
+          "Country": "United States",
+          "Sector": "Industrials",
+          "AssetClass": "Stock",
+          "AsOfDate": "03/17/2026 00:00:00"
+        },
+        {
+          "Ticker": "CLNEAU",
+          "PortfolioTicker": "CLNEAU",
+          "HoldingTicker": "",
+          "Label": "NDX1 GR",
+          "HoldingName": "Nordex Se",
+          "Weight": "5.54",
+          "Shares": "58,006",
+          "MV": "4,339,324",
+          "CurrencyCode": "EUR",
+          "Country": "Germany",
+          "Sector": "Industrials",
+          "AssetClass": "Stock",
+          "AsOfDate": "03/17/2026 00:00:00"
+        }
+      ]
+    }
+  ]
+}

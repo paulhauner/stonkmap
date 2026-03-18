@@ -8,13 +8,23 @@ import yaml
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
-SUPPORTED_HOLDINGS_PROVIDERS = ("betashares_csv", "blackrock_spreadsheet_xml")
+SUPPORTED_HOLDINGS_PROVIDERS = (
+    "betashares_csv",
+    "blackrock_spreadsheet_xml",
+    "vanguard_personal_json",
+    "vaneck_fund_dataset_json",
+)
 
 
 class HoldingsSourceConfig(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    provider: Literal["betashares_csv", "blackrock_spreadsheet_xml"]
+    provider: Literal[
+        "betashares_csv",
+        "blackrock_spreadsheet_xml",
+        "vanguard_personal_json",
+        "vaneck_fund_dataset_json",
+    ]
     url: str
     include_asset_classes: list[str] = Field(
         default_factory=lambda: ["Equity", "Equities"]
@@ -117,8 +127,8 @@ def load_index_catalog(path: str | Path) -> list[IndexConfig]:
 def validate_portfolio_csv(path: Path) -> None:
     with path.open(newline="") as handle:
         reader = csv.DictReader(handle)
-        expected = {"exchange", "ticker", "units"}
+        expected = {"exchange", "ticker", "units", "is_index"}
         if set(reader.fieldnames or []) != expected:
             raise ValueError(
-                f"{path} must have exactly these headers: exchange,ticker,units"
+                f"{path} must have exactly these headers: exchange,ticker,units,is_index"
             )

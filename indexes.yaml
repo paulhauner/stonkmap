@@ -19,3 +19,34 @@ indexes:
       include_asset_classes:
         - Equity
         - Equities
+
+  - name: VanEck Global Clean Energy ETF
+    exchange: ASX
+    ticker: CLNE
+    holdings:
+      provider: vaneck_fund_dataset_json
+      url: https://www.vaneck.com.au/Main/FundDatasetBlock/Get/?blockId=352363&pageId=248649&ticker=CLNEAU
+      include_asset_classes:
+        - Stock
+        - Equity
+        - Equities
+
+  - name: Vanguard Ethically Conscious International Shares Index ETF
+    exchange: ASX
+    ticker: VESG
+    holdings:
+      provider: vanguard_personal_json
+      url: https://www.vanguard.com.au/personal/api/data/products/holdings-download/8225
+      include_asset_classes:
+        - Equity
+        - Equities
+
+  - name: Vanguard FTSE Emerging Markets Shares ETF
+    exchange: ASX
+    ticker: VGE
+    holdings:
+      provider: vanguard_personal_json
+      url: https://www.vanguard.com.au/personal/api/data/products/holdings-download/8204
+      include_asset_classes:
+        - Equity
+        - Equities

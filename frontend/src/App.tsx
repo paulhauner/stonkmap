@@ -29,6 +29,7 @@ import type {
   DashboardData,
   IndexBreakdown,
   PortfolioBreakdown,
+  UnknownIndex,
 } from './types';
 
 type SelectedStock = {
@@ -64,6 +65,66 @@ function portfolioPath(portfolio: PortfolioBreakdown) {
 
 function indexPath(index: IndexBreakdown) {
   return `/indexes/${index.exchange}/${index.ticker}`;
+}
+
+function buildUnknownIndexesPrompt(unknownIndexes: UnknownIndex[]) {
+  const missingIndexes = Array.from(
+    new Set(unknownIndexes.map((entry) => `${entry.exchange}:${entry.ticker}`)),
+  ).sort();
+
+  return [
+    'Update indexes.yaml for this Stonkmap project.',
+    '',
+    'The following holdings are marked is_index=true in portfolio CSVs but are missing from indexes.yaml:',
+    ...missingIndexes.map((entry) => `- ${entry}`),
+    '',
+    'Requirements:',
+    '- Keep existing indexes.yaml entries unchanged unless a correction is required.',
+    '- Add new entries under the top-level `indexes:` list.',
+    '- Use a canonical holdings source URL for each fund.',
+    '- Use one of the currently supported providers: `betashares_csv` or `blackrock_spreadsheet_xml`.',
+    '- Set `include_asset_classes` so equity holdings are kept.',
+    '- If a fund cannot be supported with the current providers, explain which new provider is needed instead of inventing a broken entry.',
+  ].join('\n');
+}
+
+function UnknownIndexesCard({ unknownIndexes }: { unknownIndexes: UnknownIndex[] }) {
+  const [copied, setCopied] = useState(false);
+
+  if (unknownIndexes.length === 0) {
+    return null;
+  }
+
+  const prompt = buildUnknownIndexesPrompt(unknownIndexes);
+
+  async function copyPrompt() {
+    try {
+      await navigator.clipboard.writeText(prompt);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1500);
+    } catch {
+      setCopied(false);
+    }
+  }
+
+  return (
+    <section className="panel-card warning-card">
+      <div className="panel-header">
+        <div>
+          <p className="eyebrow subtle">Unknown indexes</p>
+          <h2>Some holdings are marked `is_index=true` but do not exist in `indexes.yaml`.</h2>
+          <p>Copy this prompt into an LLM chat to patch `indexes.yaml` with the missing scraping definitions.</p>
+        </div>
+      </div>
+      <div className="copy-actions">
+        <button className="secondary-button" onClick={() => void copyPrompt()} type="button">
+          {copied ? 'Copied' : 'Copy LLM Prompt'}
+        </button>
+        <span className="copy-hint">The prompt is also shown below as plain text.</span>
+      </div>
+      <textarea className="copy-prompt" readOnly rows={12} value={prompt} />
+    </section>
+  );
 }
 
 function toPortfolioTile(item: CompanyExposure) {
@@ -235,11 +296,13 @@ function PortfolioPage({
               <strong>
                 {holding.exchange}:{holding.ticker}
               </strong>
-              <span>{holding.units} units</span>
+              <span>{holding.units} units{holding.is_index ? ' · index' : ''}</span>
             </div>
           ))}
         </div>
       </section>
+
+      <UnknownIndexesCard unknownIndexes={portfolio.unknown_indexes} />
 
       <Heatmap
         title={`${portfolio.name} company exposure`}
@@ -266,25 +329,28 @@ function PortfolioPage({
 
 function IndexesListPage({ dashboard }: Pick<AppRoutesProps, 'dashboard'>) {
   return (
-    <section className="index-grid">
-      {dashboard.indexes.map((index) => (
-        <Link className="panel-card index-card-link" key={`${index.exchange}:${index.ticker}`} to={indexPath(index)}>
-          <div className="panel-header">
-            <div>
-              <p className="eyebrow subtle">Index</p>
-              <h2>
-                {index.exchange}:{index.ticker}
-              </h2>
-              <p>{index.name}</p>
+    <>
+      <UnknownIndexesCard unknownIndexes={dashboard.unknown_indexes} />
+      <section className="index-grid">
+        {dashboard.indexes.map((index) => (
+          <Link className="panel-card index-card-link" key={`${index.exchange}:${index.ticker}`} to={indexPath(index)}>
+            <div className="panel-header">
+              <div>
+                <p className="eyebrow subtle">Index</p>
+                <h2>
+                  {index.exchange}:{index.ticker}
+                </h2>
+                <p>{index.name}</p>
+              </div>
+              <div className="panel-meta">
+                <span>{index.constituents.length} companies</span>
+                <span>Holdings {formatDateTime(index.as_of)}</span>
+              </div>
             </div>
-            <div className="panel-meta">
-              <span>{index.constituents.length} companies</span>
-              <span>Holdings {formatDateTime(index.as_of)}</span>
-            </div>
-          </div>
-        </Link>
-      ))}
-    </section>
+          </Link>
+        ))}
+      </section>
+    </>
   );
 }
 

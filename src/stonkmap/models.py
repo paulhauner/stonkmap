@@ -53,6 +53,16 @@ class PortfolioHolding(BaseModel):
     exchange: str
     ticker: str
     units: Decimal
+    is_index: bool = False
+
+
+class UnknownIndex(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    portfolio_name: str
+    exchange: str
+    ticker: str
+    units: Decimal
 
 
 class CompanyExposure(BaseModel):
@@ -78,6 +88,7 @@ class PortfolioBreakdown(BaseModel):
     total_market_value: Decimal
     last_price_at: datetime | None = None
     companies: list[CompanyExposure]
+    unknown_indexes: list[UnknownIndex]
 
 
 class DashboardData(BaseModel):
@@ -86,4 +97,5 @@ class DashboardData(BaseModel):
     generated_at: datetime
     indexes: list[IndexBreakdown]
     portfolios: list[PortfolioBreakdown]
+    unknown_indexes: list[UnknownIndex]
     prices_last_updated_at: datetime | None = None

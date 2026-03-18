@@ -38,6 +38,7 @@ const dashboardPayload = {
           exchange: 'ASX',
           ticker: 'A200',
           units: '30',
+          is_index: true,
         },
       ],
       total_market_value: '5000',
@@ -56,6 +57,22 @@ const dashboardPayload = {
           sources: ['Index ASX:A200 (30 units)'],
         },
       ],
+      unknown_indexes: [
+        {
+          portfolio_name: 'Core Portfolio',
+          exchange: 'ASX',
+          ticker: 'VGE',
+          units: '3',
+        },
+      ],
+    },
+  ],
+  unknown_indexes: [
+    {
+      portfolio_name: 'Core Portfolio',
+      exchange: 'ASX',
+      ticker: 'VGE',
+      units: '3',
     },
   ],
 };
@@ -83,5 +100,7 @@ describe('App', () => {
     expect(screen.getByRole('button', { name: /portfolios/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /indexes/i })).toBeInTheDocument();
     expect(screen.getByText('Core Portfolio company exposure')).toBeInTheDocument();
+    expect(screen.getByDisplayValue(/Update indexes\.yaml for this Stonkmap project\./i)).toBeInTheDocument();
+    expect(screen.getByDisplayValue(/- ASX:VGE/i)).toBeInTheDocument();
   });
 });

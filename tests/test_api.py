@@ -43,7 +43,7 @@ class StaticPriceProvider(PriceProvider):
 def write_test_config(tmp_path: Path) -> Path:
     portfolio_csv = tmp_path / "portfolio.csv"
     portfolio_csv.write_text(
-        "exchange,ticker,units\nASX,A200,10\nASX,IOZ,8\nNASDAQ,MSFT,4\n"
+        "exchange,ticker,units,is_index\nASX,A200,10,true\nASX,IOZ,8,true\nASX,VGE,3,true\nNASDAQ,MSFT,4,false\n"
     )
     config_path = tmp_path / "config.yaml"
     config_path.write_text(
@@ -124,3 +124,40 @@ def test_refresh_endpoints_populate_dashboard(tmp_path: Path) -> None:
         assert len(payload["indexes"]) == 2
         assert payload["portfolios"][0]["name"] == "Test Portfolio"
         assert payload["portfolios"][0]["companies"][0]["ticker"] in {"CBA", "BHP", "MSFT"}
+        assert payload["portfolios"][0]["unknown_indexes"][0]["ticker"] == "VGE"
+        assert payload["unknown_indexes"][0]["ticker"] == "VGE"
+
+
+def test_configured_indexes_are_not_marked_unknown_before_refresh(tmp_path: Path) -> None:
+    portfolio_csv = tmp_path / "portfolio.csv"
+    portfolio_csv.write_text("exchange,ticker,units,is_index\nASX,A200,10,true\n")
+
+    config_path = tmp_path / "config.yaml"
+    config_path.write_text(
+        """
+ports:
+  backend: 18000
+  frontend: 15173
+portfolios:
+  - name: Known Index Portfolio
+    csv_path: ./portfolio.csv
+"""
+    )
+    indexes_path = write_test_indexes(tmp_path)
+    app = create_app(
+        config_path=config_path,
+        indexes_path=indexes_path,
+        database_path=tmp_path / "stonkmap.sqlite3",
+        index_service=IndexService(document_store=StaticDocumentStore({})),
+        price_provider=StaticPriceProvider(),
+    )
+
+    with TestClient(app) as client:
+        refresh_prices = client.post("/api/prices/refresh")
+        assert refresh_prices.status_code == 200
+
+        dashboard = client.get("/api/dashboard")
+        assert dashboard.status_code == 200
+        payload = dashboard.json()
+        assert payload["portfolios"][0]["unknown_indexes"] == []
+        assert payload["unknown_indexes"] == []

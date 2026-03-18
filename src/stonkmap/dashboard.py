@@ -6,7 +6,13 @@ from decimal import Decimal
 
 from .config import IndexConfig, ResolvedAppConfig
 from .database import Database
-from .models import CompanyExposure, DashboardData, IndexBreakdown, PortfolioBreakdown
+from .models import (
+    CompanyExposure,
+    DashboardData,
+    IndexBreakdown,
+    PortfolioBreakdown,
+    UnknownIndex,
+)
 from .portfolio import load_portfolio_holdings
 
 
@@ -24,7 +30,7 @@ class DashboardService:
         for portfolio in self.config.portfolios:
             for holding in load_portfolio_holdings(portfolio.csv_path):
                 key = (holding.exchange, holding.ticker)
-                if key in configured_indexes:
+                if holding.is_index and key in configured_indexes:
                     tracked.add(key)
         return tracked
 
@@ -39,16 +45,19 @@ class DashboardService:
     def build_dashboard(self) -> DashboardData:
         indexes = self.list_indexes()
         index_lookup = {(item.exchange, item.ticker): item for item in indexes}
+        configured_index_keys = {(item.exchange, item.ticker) for item in self.indexes}
         price_lookup = {
             (item.exchange, item.ticker): item for item in self.database.list_prices()
         }
         portfolios: list[PortfolioBreakdown] = []
+        unknown_indexes: list[UnknownIndex] = []
 
         for portfolio in self.config.portfolios:
             holdings = load_portfolio_holdings(portfolio.csv_path)
             exposures: dict[tuple[str | None, str], dict[str, object]] = {}
             total_market_value = Decimal("0")
             latest_price_at = None
+            portfolio_unknown_indexes: list[UnknownIndex] = []
 
             for holding in holdings:
                 price = price_lookup.get((holding.exchange, holding.ticker))
@@ -60,8 +69,7 @@ class DashboardService:
                     holding.units * price.price if price is not None else Decimal("0")
                 )
                 total_market_value += position_market_value
-                breakdown = index_lookup.get((holding.exchange, holding.ticker))
-                if breakdown is None:
+                if not holding.is_index:
                     key = (holding.exchange, holding.ticker)
                     item = exposures.setdefault(
                         key,
@@ -79,6 +87,21 @@ class DashboardService:
                     )
                     item["market_value"] += position_market_value
                     item["sources"].append(f"Direct holding: {holding.exchange}:{holding.ticker}")
+                    continue
+
+                key = (holding.exchange, holding.ticker)
+                if key not in configured_index_keys:
+                    unknown_index = UnknownIndex(
+                        portfolio_name=portfolio.name,
+                        exchange=holding.exchange,
+                        ticker=holding.ticker,
+                        units=holding.units,
+                    )
+                    portfolio_unknown_indexes.append(unknown_index)
+                    unknown_indexes.append(unknown_index)
+                    continue
+                breakdown = index_lookup.get(key)
+                if breakdown is None:
                     continue
 
                 for constituent in breakdown.constituents:
@@ -137,6 +160,7 @@ class DashboardService:
                     total_market_value=total_market_value,
                     last_price_at=latest_price_at,
                     companies=companies,
+                    unknown_indexes=portfolio_unknown_indexes,
                 )
             )
 
@@ -144,5 +168,6 @@ class DashboardService:
             generated_at=datetime.now(timezone.utc),
             indexes=indexes,
             portfolios=portfolios,
+            unknown_indexes=unknown_indexes,
             prices_last_updated_at=self.database.latest_price_fetched_at(),
         )

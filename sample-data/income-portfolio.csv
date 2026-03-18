@@ -1,4 +1,4 @@
-exchange,ticker,units
-ASX,IOZ,15
-ASX,TLS,300
-NYSE,KO,20
+exchange,ticker,units,is_index
+ASX,IOZ,15,true
+ASX,TLS,300,false
+NYSE,KO,20,false
