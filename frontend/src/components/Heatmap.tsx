@@ -42,6 +42,10 @@ function tileColor(value: number, maxValue: number) {
   return '#334155';
 }
 
+function clipIdForTile(id: string) {
+  return `heatmap-clip-${id.replace(/[^a-zA-Z0-9_-]/g, '-')}`;
+}
+
 export function Heatmap({
   title,
   data,
@@ -166,8 +170,18 @@ export function Heatmap({
                 const item = leaf.data;
                 const width = leaf.x1 - leaf.x0;
                 const height = leaf.y1 - leaf.y0;
-                const showTicker = width > 70 && height > 32;
-                const showSecondary = width > 110 && height > 62;
+                const clipId = clipIdForTile(item.id);
+                const inset = Math.max(2, Math.min(12, Math.min(width, height) * 0.14));
+                const tickerFontSize = Math.max(
+                  4,
+                  Math.min(14, width * 0.22, height * 0.58),
+                );
+                const secondaryFontSize = Math.max(
+                  4,
+                  Math.min(11, width * 0.12, height * 0.26),
+                );
+                const showTicker = width > 8 && height > 8;
+                const showSecondary = width > 72 && height > 34;
 
                 return (
                   <g
@@ -195,6 +209,16 @@ export function Heatmap({
                     tabIndex={0}
                   >
                     <title>{`${item.ticker}: ${item.name}`}</title>
+                    <defs>
+                      <clipPath id={clipId}>
+                        <rect
+                          height={Math.max(0, height - inset * 2)}
+                          width={Math.max(0, width - inset * 2)}
+                          x={leaf.x0 + inset}
+                          y={leaf.y0 + inset}
+                        />
+                      </clipPath>
+                    </defs>
                     <rect
                       fill={tileColor(item.size, maxValue)}
                       height={height}
@@ -206,12 +230,24 @@ export function Heatmap({
                       y={leaf.y0}
                     />
                     {showTicker ? (
-                      <text className="heatmap-label" x={leaf.x0 + 12} y={leaf.y0 + 22}>
+                      <text
+                        className="heatmap-label"
+                        clipPath={`url(#${clipId})`}
+                        style={{ fontSize: `${tickerFontSize}px` }}
+                        x={leaf.x0 + inset}
+                        y={leaf.y0 + inset + tickerFontSize}
+                      >
                         {item.ticker}
                       </text>
                     ) : null}
                     {showSecondary ? (
-                      <text className="heatmap-secondary" x={leaf.x0 + 12} y={leaf.y0 + 42}>
+                      <text
+                        className="heatmap-secondary"
+                        clipPath={`url(#${clipId})`}
+                        style={{ fontSize: `${secondaryFontSize}px` }}
+                        x={leaf.x0 + inset}
+                        y={leaf.y0 + inset + tickerFontSize + secondaryFontSize + 6}
+                      >
                         {item.secondaryLabel}
                       </text>
                     ) : null}
