@@ -25,6 +25,11 @@ This serves:
 - Backend API at `http://localhost:18000`
 - Frontend at `http://localhost:15173`
 
+The compose setup now runs in development mode:
+- backend runs `uvicorn --reload`
+- frontend runs the Vite dev server with file watching
+- source directories are bind-mounted, so code, `config.yaml`, and `indexes.yaml` changes restart automatically
+
 The compose setup uses the tracked `config.yaml`, `indexes.yaml`, and sample portfolio CSV files by default.
 The local `user-data/` folder is bind-mounted into both containers at `/app/user-data` so local CSV inputs are available without being baked into the images.
 

@@ -137,7 +137,7 @@ export function Heatmap({ title, data, onSelect, emptyMessage }: HeatmapProps) {
                     <rect
                       fill={tileColor(item.size, maxValue)}
                       height={height}
-                      rx={12}
+                      rx={0}
                       stroke="#f8fafc"
                       strokeWidth={2}
                       width={width}

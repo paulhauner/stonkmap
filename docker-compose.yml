@@ -10,21 +10,28 @@ services:
     ports:
       - "18000:8000"
     volumes:
+      - .:/app
       - stonkmap-data:/app/data
       - ./user-data:/app/user-data
 
   web:
     build:
       context: ./frontend
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.dev
       args:
         VITE_API_BASE_URL: http://localhost:18000/api
     depends_on:
       - api
+    environment:
+      CHOKIDAR_USEPOLLING: "true"
+      VITE_API_BASE_URL: http://localhost:18000/api
     ports:
-      - "15173:80"
+      - "15173:5173"
     volumes:
+      - ./frontend:/app
+      - stonkmap-node-modules:/app/node_modules
       - ./user-data:/app/user-data
 
 volumes:
   stonkmap-data:
+  stonkmap-node-modules:
