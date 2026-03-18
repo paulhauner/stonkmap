@@ -1,0 +1,1 @@
+{"root":["./src/app.test.tsx","./src/app.tsx","./src/api.ts","./src/format.ts","./src/main.tsx","./src/test-setup.ts","./src/types.ts","./src/vite-env.d.ts","./src/components/heatmap.tsx","./src/components/statpill.tsx","./src/components/stockmodal.tsx"],"version":"5.9.3"}

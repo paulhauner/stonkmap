@@ -1,0 +1,1 @@
+"""Stonkmap application package."""

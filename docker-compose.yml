@@ -1,0 +1,27 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    environment:
+      STONKMAP_CONFIG: /app/config.yaml
+      STONKMAP_INDEXES_PATH: /app/indexes.yaml
+      STONKMAP_DB_PATH: /app/data/stonkmap.sqlite3
+    ports:
+      - "18000:8000"
+    volumes:
+      - stonkmap-data:/app/data
+
+  web:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_BASE_URL: http://localhost:18000/api
+    depends_on:
+      - api
+    ports:
+      - "15173:80"
+
+volumes:
+  stonkmap-data:

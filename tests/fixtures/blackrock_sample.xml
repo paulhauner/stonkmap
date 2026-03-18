@@ -1,0 +1,95 @@
+<?xml version="1.0"?>
+<ss:Workbook xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">
+  <ss:Worksheet ss:Name="Holdings">
+    <ss:Table>
+      <ss:Row>
+        <ss:Cell><ss:Data ss:Type="String">16-Mar-2026</ss:Data></ss:Cell>
+      </ss:Row>
+      <ss:Row>
+        <ss:Cell><ss:Data ss:Type="String">iShares Core S&amp;P/ASX 200 ETF</ss:Data></ss:Cell>
+      </ss:Row>
+      <ss:Row>
+        <ss:Cell><ss:Data ss:Type="String">Fund Holdings as of</ss:Data></ss:Cell>
+        <ss:Cell><ss:Data ss:Type="String">16-Mar-2026</ss:Data></ss:Cell>
+      </ss:Row>
+      <ss:Row>
+        <ss:Cell><ss:Data ss:Type="String"></ss:Data></ss:Cell>
+      </ss:Row>
+      <ss:Row>
+        <ss:Cell><ss:Data ss:Type="String">Ticker</ss:Data></ss:Cell>
+        <ss:Cell><ss:Data ss:Type="String">Name</ss:Data></ss:Cell>
+        <ss:Cell><ss:Data ss:Type="String">Sector</ss:Data></ss:Cell>
+        <ss:Cell><ss:Data ss:Type="String">Asset Class</ss:Data></ss:Cell>
+        <ss:Cell><ss:Data ss:Type="String">Market Value</ss:Data></ss:Cell>
+        <ss:Cell><ss:Data ss:Type="String">Weight (%)</ss:Data></ss:Cell>
+        <ss:Cell><ss:Data ss:Type="String">Notional Value</ss:Data></ss:Cell>
+        <ss:Cell><ss:Data ss:Type="String">Shares</ss:Data></ss:Cell>
+        <ss:Cell><ss:Data ss:Type="String">CUSIP</ss:Data></ss:Cell>
+        <ss:Cell><ss:Data ss:Type="String">ISIN</ss:Data></ss:Cell>
+        <ss:Cell><ss:Data ss:Type="String">SEDOL</ss:Data></ss:Cell>
+        <ss:Cell><ss:Data ss:Type="String">Price</ss:Data></ss:Cell>
+        <ss:Cell><ss:Data ss:Type="String">Location</ss:Data></ss:Cell>
+        <ss:Cell><ss:Data ss:Type="String">Exchange</ss:Data></ss:Cell>
+        <ss:Cell><ss:Data ss:Type="String">Currency</ss:Data></ss:Cell>
+        <ss:Cell><ss:Data ss:Type="String">FX Rate</ss:Data></ss:Cell>
+      </ss:Row>
+      <ss:Row>
+        <ss:Cell><ss:Data ss:Type="String">CBA AT</ss:Data></ss:Cell>
+        <ss:Cell><ss:Data ss:Type="String">COMMONWEALTH BANK OF AUSTRALIA</ss:Data></ss:Cell>
+        <ss:Cell><ss:Data ss:Type="String">Financials</ss:Data></ss:Cell>
+        <ss:Cell><ss:Data ss:Type="String">Equity</ss:Data></ss:Cell>
+        <ss:Cell><ss:Data ss:Type="String">215000</ss:Data></ss:Cell>
+        <ss:Cell><ss:Data ss:Type="String">10.50</ss:Data></ss:Cell>
+        <ss:Cell><ss:Data ss:Type="String">215000</ss:Data></ss:Cell>
+        <ss:Cell><ss:Data ss:Type="String">1570</ss:Data></ss:Cell>
+        <ss:Cell><ss:Data ss:Type="String"></ss:Data></ss:Cell>
+        <ss:Cell><ss:Data ss:Type="String"></ss:Data></ss:Cell>
+        <ss:Cell><ss:Data ss:Type="String"></ss:Data></ss:Cell>
+        <ss:Cell><ss:Data ss:Type="String">136.94</ss:Data></ss:Cell>
+        <ss:Cell><ss:Data ss:Type="String">Australia</ss:Data></ss:Cell>
+        <ss:Cell><ss:Data ss:Type="String">ASX</ss:Data></ss:Cell>
+        <ss:Cell><ss:Data ss:Type="String">AUD</ss:Data></ss:Cell>
+        <ss:Cell><ss:Data ss:Type="String">1</ss:Data></ss:Cell>
+      </ss:Row>
+      <ss:Row>
+        <ss:Cell><ss:Data ss:Type="String">BHP AT</ss:Data></ss:Cell>
+        <ss:Cell><ss:Data ss:Type="String">BHP GROUP LTD</ss:Data></ss:Cell>
+        <ss:Cell><ss:Data ss:Type="String">Materials</ss:Data></ss:Cell>
+        <ss:Cell><ss:Data ss:Type="String">Equity</ss:Data></ss:Cell>
+        <ss:Cell><ss:Data ss:Type="String">181000</ss:Data></ss:Cell>
+        <ss:Cell><ss:Data ss:Type="String">8.80</ss:Data></ss:Cell>
+        <ss:Cell><ss:Data ss:Type="String">181000</ss:Data></ss:Cell>
+        <ss:Cell><ss:Data ss:Type="String">4800</ss:Data></ss:Cell>
+        <ss:Cell><ss:Data ss:Type="String"></ss:Data></ss:Cell>
+        <ss:Cell><ss:Data ss:Type="String"></ss:Data></ss:Cell>
+        <ss:Cell><ss:Data ss:Type="String"></ss:Data></ss:Cell>
+        <ss:Cell><ss:Data ss:Type="String">37.71</ss:Data></ss:Cell>
+        <ss:Cell><ss:Data ss:Type="String">Australia</ss:Data></ss:Cell>
+        <ss:Cell><ss:Data ss:Type="String">ASX</ss:Data></ss:Cell>
+        <ss:Cell><ss:Data ss:Type="String">AUD</ss:Data></ss:Cell>
+        <ss:Cell><ss:Data ss:Type="String">1</ss:Data></ss:Cell>
+      </ss:Row>
+      <ss:Row>
+        <ss:Cell><ss:Data ss:Type="String">AUD CASH</ss:Data></ss:Cell>
+        <ss:Cell><ss:Data ss:Type="String">CASH</ss:Data></ss:Cell>
+        <ss:Cell><ss:Data ss:Type="String"></ss:Data></ss:Cell>
+        <ss:Cell><ss:Data ss:Type="String">Cash</ss:Data></ss:Cell>
+        <ss:Cell><ss:Data ss:Type="String">1500</ss:Data></ss:Cell>
+        <ss:Cell><ss:Data ss:Type="String">0.10</ss:Data></ss:Cell>
+        <ss:Cell><ss:Data ss:Type="String">1500</ss:Data></ss:Cell>
+        <ss:Cell><ss:Data ss:Type="String">1</ss:Data></ss:Cell>
+        <ss:Cell><ss:Data ss:Type="String"></ss:Data></ss:Cell>
+        <ss:Cell><ss:Data ss:Type="String"></ss:Data></ss:Cell>
+        <ss:Cell><ss:Data ss:Type="String"></ss:Data></ss:Cell>
+        <ss:Cell><ss:Data ss:Type="String">1</ss:Data></ss:Cell>
+        <ss:Cell><ss:Data ss:Type="String">Australia</ss:Data></ss:Cell>
+        <ss:Cell><ss:Data ss:Type="String">ASX</ss:Data></ss:Cell>
+        <ss:Cell><ss:Data ss:Type="String">AUD</ss:Data></ss:Cell>
+        <ss:Cell><ss:Data ss:Type="String">1</ss:Data></ss:Cell>
+      </ss:Row>
+      <ss:Row>
+        <ss:Cell><ss:Data ss:Type="String"></ss:Data></ss:Cell>
+      </ss:Row>
+    </ss:Table>
+  </ss:Worksheet>
+</ss:Workbook>

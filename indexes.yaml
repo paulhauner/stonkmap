@@ -1,0 +1,21 @@
+# Tracked index scraping catalog. Add and review new scraping methods here.
+indexes:
+  - name: Betashares Australia 200 ETF
+    exchange: ASX
+    ticker: A200
+    holdings:
+      provider: betashares_csv
+      url: https://www.betashares.com.au/files/csv/A200_Portfolio_Holdings.csv
+      include_asset_classes:
+        - Equity
+        - Equities
+
+  - name: iShares Core S&P/ASX 200 ETF
+    exchange: ASX
+    ticker: IOZ
+    holdings:
+      provider: blackrock_spreadsheet_xml
+      url: https://www.blackrock.com/au/products/251852/fund/1535604546388.ajax?dataType=fund&fileName=iShares-Core-SPASX-200-ETF_fund&fileType=xls
+      include_asset_classes:
+        - Equity
+        - Equities

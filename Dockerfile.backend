@@ -1,0 +1,23 @@
+FROM python:3.10-slim
+
+WORKDIR /app
+
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+ENV STONKMAP_CONFIG=/app/config.yaml
+ENV STONKMAP_INDEXES_PATH=/app/indexes.yaml
+ENV STONKMAP_DB_PATH=/app/data/stonkmap.sqlite3
+
+COPY pyproject.toml /app/pyproject.toml
+COPY src /app/src
+COPY docs /app/docs
+COPY sample-data /app/sample-data
+COPY config.yaml /app/config.yaml
+COPY config.example.yaml /app/config.example.yaml
+COPY indexes.yaml /app/indexes.yaml
+
+RUN pip install --no-cache-dir .
+
+EXPOSE 8000
+
+CMD ["python", "-m", "uvicorn", "stonkmap.main:app", "--host", "0.0.0.0", "--port", "8000"]

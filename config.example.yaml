@@ -1,0 +1,10 @@
+ports:
+  backend: 18000
+  frontend: 15173
+
+# Copy this file to config.yaml and update the portfolio CSV paths for your setup.
+portfolios:
+  - name: Core Portfolio
+    csv_path: ./sample-data/core-portfolio.csv
+  - name: Income Portfolio
+    csv_path: ./sample-data/income-portfolio.csv
