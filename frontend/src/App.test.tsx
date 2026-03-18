@@ -80,8 +80,8 @@ describe('App', () => {
       expect(screen.getByText('Core Portfolio')).toBeInTheDocument();
     });
 
-    expect(screen.getByText('Index Breakdowns')).toBeInTheDocument();
-    expect(screen.getByText('Betashares Australia 200 ETF')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /portfolios/i })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /indexes/i })).toBeInTheDocument();
     expect(screen.getByText('Core Portfolio company exposure')).toBeInTheDocument();
   });
 });

@@ -1,12 +1,35 @@
-import { ArrowPathIcon, BanknotesIcon, SparklesIcon } from '@heroicons/react/24/outline';
-import { useEffect, useState } from 'react';
+import {
+  ArrowPathIcon,
+  BanknotesIcon,
+  ChartBarSquareIcon,
+  ChevronDownIcon,
+  SparklesIcon,
+} from '@heroicons/react/24/outline';
+import { Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/react';
+import { type ReactNode, useEffect, useState } from 'react';
+import {
+  BrowserRouter,
+  Link,
+  Navigate,
+  NavLink,
+  Route,
+  Routes,
+  useLocation,
+  useParams,
+} from 'react-router-dom';
 
 import { fetchDashboard, refreshIndexes, refreshPrices } from './api';
 import { Heatmap } from './components/Heatmap';
 import { StatPill } from './components/StatPill';
 import { StockModal } from './components/StockModal';
 import { formatDateTime, formatMoney, formatPercent } from './format';
-import type { CompanyExposure, Constituent, DashboardData, IndexBreakdown, PortfolioBreakdown } from './types';
+import type {
+  CompanyExposure,
+  Constituent,
+  DashboardData,
+  IndexBreakdown,
+  PortfolioBreakdown,
+} from './types';
 
 type SelectedStock = {
   exchange?: string | null;
@@ -20,6 +43,28 @@ type SelectedStock = {
   currency?: string | null;
   sources?: string[];
 };
+
+type AppRoutesProps = {
+  dashboard: DashboardData;
+  busyAction: 'indexes' | 'prices' | null;
+  onRunAction: (action: 'indexes' | 'prices') => Promise<void>;
+  onSelectStock: (stock: SelectedStock) => void;
+};
+
+function slugify(name: string) {
+  return name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
+function portfolioPath(portfolio: PortfolioBreakdown) {
+  return `/portfolios/${slugify(portfolio.name)}`;
+}
+
+function indexPath(index: IndexBreakdown) {
+  return `/indexes/${index.exchange}/${index.ticker}`;
+}
 
 function toPortfolioTile(item: CompanyExposure) {
   return {
@@ -55,6 +100,287 @@ function toIndexTile(item: Constituent) {
     sources: [`Constituent of ${item.source_ticker}`],
     weightPercentage: item.weight_percentage,
   };
+}
+
+function TopBar({ dashboard, busyAction, onRunAction }: Omit<AppRoutesProps, 'onSelectStock'>) {
+  const location = useLocation();
+  const homePath = dashboard.portfolios[0] ? portfolioPath(dashboard.portfolios[0]) : '/indexes';
+
+  return (
+    <nav className="top-bar">
+      <Link className="brand-link" to={homePath}>
+        <span className="brand-mark">SM</span>
+        <span className="brand-copy">
+          <strong>Stonkmap</strong>
+          <small>Portfolio heatmaps</small>
+        </span>
+      </Link>
+
+      <div className="top-bar-links">
+        <Menu as="div" className="nav-menu">
+          <MenuButton className="nav-button">
+            Portfolios
+            <ChevronDownIcon />
+          </MenuButton>
+          <MenuItems anchor="bottom start" className="dropdown-menu">
+            {dashboard.portfolios.map((portfolio) => {
+              const path = portfolioPath(portfolio);
+              const active = location.pathname === path;
+              return (
+                <MenuItem key={portfolio.name}>
+                  {({ focus }) => (
+                    <Link className={`dropdown-item${focus || active ? ' is-active' : ''}`} to={path}>
+                      <span>{portfolio.name}</span>
+                      <small>{portfolio.holdings.length} holdings</small>
+                    </Link>
+                  )}
+                </MenuItem>
+              );
+            })}
+          </MenuItems>
+        </Menu>
+
+        <NavLink
+          className={({ isActive }) => `nav-button${isActive ? ' is-active' : ''}`}
+          to="/indexes"
+        >
+          Indexes
+        </NavLink>
+      </div>
+
+      <div className="top-bar-actions">
+        <button
+          className="primary-button"
+          onClick={() => void onRunAction('indexes')}
+          disabled={busyAction !== null}
+        >
+          <ArrowPathIcon />
+          {busyAction === 'indexes' ? 'Refreshing indexes…' : 'Refresh Indexes'}
+        </button>
+        <button
+          className="secondary-button"
+          onClick={() => void onRunAction('prices')}
+          disabled={busyAction !== null}
+        >
+          <BanknotesIcon />
+          {busyAction === 'prices' ? 'Refreshing prices…' : 'Refresh Prices'}
+        </button>
+      </div>
+    </nav>
+  );
+}
+
+function PageChrome({ dashboard, children }: { dashboard: DashboardData; children: ReactNode }) {
+  return (
+    <>
+      <header className="masthead">
+        <div>
+          <p className="eyebrow">Stonkmap</p>
+          <h1>Inspect one portfolio or index at a time.</h1>
+          <p className="hero-copy">
+            Use the top menu to jump between config-defined portfolios and tracked indexes. Refreshes are manual and the latest snapshots stay cached in SQLite.
+          </p>
+        </div>
+        <div className="masthead-panel">
+          <ChartBarSquareIcon />
+          <strong>Heatmap drill-down</strong>
+          <span>Hover for the company name. Click a tile for breakdown details.</span>
+        </div>
+      </header>
+
+      <section className="stats-row">
+        <StatPill label="Portfolios" value={String(dashboard.portfolios.length)} />
+        <StatPill label="Tracked Indexes" value={String(dashboard.indexes.length)} />
+        <StatPill label="Prices Updated" value={formatDateTime(dashboard.prices_last_updated_at)} />
+        <StatPill label="Generated" value={formatDateTime(dashboard.generated_at)} />
+      </section>
+
+      <main className="page-stack">{children}</main>
+    </>
+  );
+}
+
+function PortfolioPage({
+  dashboard,
+  onSelectStock,
+}: Pick<AppRoutesProps, 'dashboard' | 'onSelectStock'>) {
+  const { portfolioSlug } = useParams();
+  const portfolio = dashboard.portfolios.find((entry) => slugify(entry.name) === portfolioSlug);
+
+  if (!portfolio) {
+    return (
+      <section className="panel-card">
+        <h2>Portfolio not found</h2>
+      </section>
+    );
+  }
+
+  return (
+    <>
+      <section className="panel-card page-header-card">
+        <div className="panel-header">
+          <div>
+            <p className="eyebrow subtle">Portfolio</p>
+            <h2>{portfolio.name}</h2>
+            <p>{portfolio.holdings.length} config-defined holdings</p>
+          </div>
+          <div className="panel-meta">
+            <span>Total value {formatMoney(portfolio.total_market_value)}</span>
+            <span>Prices refreshed {formatDateTime(portfolio.last_price_at)}</span>
+          </div>
+        </div>
+        <div className="holding-chip-row">
+          {portfolio.holdings.map((holding) => (
+            <div className="holding-chip" key={`${holding.exchange}:${holding.ticker}`}>
+              <strong>
+                {holding.exchange}:{holding.ticker}
+              </strong>
+              <span>{holding.units} units</span>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <Heatmap
+        title={`${portfolio.name} company exposure`}
+        data={portfolio.companies.map(toPortfolioTile)}
+        emptyMessage="Price data is missing for this portfolio. Refresh prices to generate a meaningful heatmap."
+        onSelect={(item) =>
+          onSelectStock({
+            exchange: item.exchange,
+            ticker: item.ticker,
+            name: item.name,
+            weightPercentage: item.weightPercentage ?? null,
+            marketValue: item.marketValue ?? null,
+            price: item.price ?? null,
+            sector: item.sector ?? null,
+            country: item.country ?? null,
+            currency: item.currency ?? null,
+            sources: item.sources ?? [],
+          })
+        }
+      />
+    </>
+  );
+}
+
+function IndexesListPage({ dashboard }: Pick<AppRoutesProps, 'dashboard'>) {
+  return (
+    <section className="index-grid">
+      {dashboard.indexes.map((index) => (
+        <Link className="panel-card index-card-link" key={`${index.exchange}:${index.ticker}`} to={indexPath(index)}>
+          <div className="panel-header">
+            <div>
+              <p className="eyebrow subtle">Index</p>
+              <h2>
+                {index.exchange}:{index.ticker}
+              </h2>
+              <p>{index.name}</p>
+            </div>
+            <div className="panel-meta">
+              <span>{index.constituents.length} companies</span>
+              <span>Holdings {formatDateTime(index.as_of)}</span>
+            </div>
+          </div>
+        </Link>
+      ))}
+    </section>
+  );
+}
+
+function IndexDetailPage({
+  dashboard,
+  onSelectStock,
+}: Pick<AppRoutesProps, 'dashboard' | 'onSelectStock'>) {
+  const { exchange, ticker } = useParams();
+  const index = dashboard.indexes.find(
+    (entry) => entry.exchange === exchange && entry.ticker === ticker,
+  );
+
+  if (!index) {
+    return (
+      <section className="panel-card">
+        <h2>Index not found</h2>
+      </section>
+    );
+  }
+
+  return (
+    <>
+      <section className="panel-card page-header-card">
+        <div className="panel-header">
+          <div>
+            <p className="eyebrow subtle">Index</p>
+            <h2>
+              {index.exchange}:{index.ticker}
+            </h2>
+            <p>{index.name}</p>
+          </div>
+          <div className="panel-meta">
+            <span>{index.constituents.length} companies</span>
+            <span>Holdings {formatDateTime(index.as_of)}</span>
+            <span>Fetched {formatDateTime(index.fetched_at)}</span>
+          </div>
+        </div>
+      </section>
+
+      <Heatmap
+        title={`${index.ticker} constituents`}
+        data={index.constituents.map(toIndexTile)}
+        onSelect={(item) =>
+          onSelectStock({
+            exchange: item.exchange,
+            ticker: item.ticker,
+            name: item.name,
+            weightPercentage: item.weightPercentage ?? null,
+            marketValue: item.marketValue ?? null,
+            price: item.price ?? null,
+            sector: item.sector ?? null,
+            country: item.country ?? null,
+            currency: item.currency ?? null,
+            sources: item.sources ?? [],
+          })
+        }
+      />
+    </>
+  );
+}
+
+function AppRoutes({ dashboard, busyAction, onRunAction, onSelectStock }: AppRoutesProps) {
+  const defaultPortfolio = dashboard.portfolios[0];
+
+  return (
+    <>
+      <TopBar dashboard={dashboard} busyAction={busyAction} onRunAction={onRunAction} />
+      <PageChrome dashboard={dashboard}>
+        <Routes>
+          <Route
+            path="/"
+            element={
+              defaultPortfolio ? (
+                <Navigate replace to={portfolioPath(defaultPortfolio)} />
+              ) : (
+                <Navigate replace to="/indexes" />
+              )
+            }
+          />
+          <Route
+            path="/portfolios/:portfolioSlug"
+            element={<PortfolioPage dashboard={dashboard} onSelectStock={onSelectStock} />}
+          />
+          <Route path="/indexes" element={<IndexesListPage dashboard={dashboard} />} />
+          <Route
+            path="/indexes/:exchange/:ticker"
+            element={<IndexDetailPage dashboard={dashboard} onSelectStock={onSelectStock} />}
+          />
+          <Route
+            path="*"
+            element={<Navigate replace to={defaultPortfolio ? portfolioPath(defaultPortfolio) : '/indexes'} />}
+          />
+        </Routes>
+      </PageChrome>
+    </>
+  );
 }
 
 export default function App() {
@@ -97,133 +423,35 @@ export default function App() {
   }
 
   return (
-    <div className="app-shell">
-      <header className="hero">
-        <div>
-          <p className="eyebrow">Stonkmap</p>
-          <h1>See the actual companies hiding inside your ETF-heavy portfolio.</h1>
-          <p className="hero-copy">
-            Portfolios are loaded from config-driven CSV files. Index breakdowns and stock prices are cached in SQLite and refreshed on demand.
-          </p>
-        </div>
-        <div className="hero-actions">
-          <button className="primary-button" onClick={() => void runAction('indexes')} disabled={busyAction !== null}>
-            <ArrowPathIcon />
-            {busyAction === 'indexes' ? 'Refreshing index breakdowns…' : 'Refresh Index Breakdown'}
-          </button>
-          <button className="secondary-button" onClick={() => void runAction('prices')} disabled={busyAction !== null}>
-            <BanknotesIcon />
-            {busyAction === 'prices' ? 'Refreshing stock prices…' : 'Refresh Prices'}
-          </button>
-        </div>
-      </header>
+    <BrowserRouter>
+      <div className="app-shell">
+        {error ? <div className="error-banner">{error}</div> : null}
+        {loading ? <div className="loading-panel">Loading dashboard…</div> : null}
 
-      {dashboard ? (
-        <section className="stats-row">
-          <StatPill label="Portfolios" value={String(dashboard.portfolios.length)} />
-          <StatPill label="Tracked Indexes" value={String(dashboard.indexes.length)} />
-          <StatPill label="Prices Updated" value={formatDateTime(dashboard.prices_last_updated_at)} />
-          <StatPill label="Generated" value={formatDateTime(dashboard.generated_at)} />
-        </section>
-      ) : null}
+        {!loading && dashboard ? (
+          <AppRoutes
+            dashboard={dashboard}
+            busyAction={busyAction}
+            onRunAction={runAction}
+            onSelectStock={setSelectedStock}
+          />
+        ) : null}
 
-      {error ? <div className="error-banner">{error}</div> : null}
-      {loading ? <div className="loading-panel">Loading dashboard…</div> : null}
-
-      {dashboard ? (
-        <main className="dashboard-grid">
-          <section className="column">
-            <div className="section-heading">
-              <h2>Portfolios</h2>
-              <span>Config-defined portfolio CSVs</span>
+        {!loading &&
+        dashboard &&
+        dashboard.indexes.length === 0 &&
+        dashboard.portfolios.every((portfolio) => portfolio.companies.length === 0) ? (
+          <section className="empty-dashboard">
+            <SparklesIcon />
+            <div>
+              <h2>Start by refreshing index breakdowns, then stock prices.</h2>
+              <p>The sample config is wired up, but the dashboard stays empty until the first refresh populates SQLite.</p>
             </div>
-            {dashboard.portfolios.map((portfolio: PortfolioBreakdown) => (
-              <article className="panel-card" key={portfolio.name}>
-                <div className="panel-header">
-                  <div>
-                    <h3>{portfolio.name}</h3>
-                    <p>{portfolio.holdings.length} holdings</p>
-                  </div>
-                  <div className="panel-meta">
-                    <span>Total value {formatMoney(portfolio.total_market_value)}</span>
-                    <span>Prices {formatDateTime(portfolio.last_price_at)}</span>
-                  </div>
-                </div>
-                <Heatmap
-                  title={`${portfolio.name} company exposure`}
-                  data={portfolio.companies.map(toPortfolioTile)}
-                  onSelect={(item) =>
-                    setSelectedStock({
-                      exchange: item.exchange,
-                      ticker: item.ticker,
-                      name: item.name,
-                      weightPercentage: item.weightPercentage ?? null,
-                      marketValue: item.marketValue ?? null,
-                      price: item.price ?? null,
-                      sector: item.sector ?? null,
-                      country: item.country ?? null,
-                      currency: item.currency ?? null,
-                      sources: item.sources ?? [],
-                    })
-                  }
-                />
-              </article>
-            ))}
           </section>
+        ) : null}
 
-          <section className="column">
-            <div className="section-heading">
-              <h2>Index Breakdowns</h2>
-              <span>Only indexes found in the configured portfolios</span>
-            </div>
-            {dashboard.indexes.map((index: IndexBreakdown) => (
-              <article className="panel-card" key={`${index.exchange}:${index.ticker}`}>
-                <div className="panel-header">
-                  <div>
-                    <h3>
-                      {index.exchange}:{index.ticker}
-                    </h3>
-                    <p>{index.name}</p>
-                  </div>
-                  <div className="panel-meta">
-                    <span>Holdings as of {formatDateTime(index.as_of)}</span>
-                    <span>Fetched {formatDateTime(index.fetched_at)}</span>
-                  </div>
-                </div>
-                <Heatmap
-                  title={`${index.ticker} constituents`}
-                  data={index.constituents.map(toIndexTile)}
-                  onSelect={(item) =>
-                    setSelectedStock({
-                      exchange: item.exchange,
-                      ticker: item.ticker,
-                      name: item.name,
-                      weightPercentage: item.weightPercentage ?? null,
-                      marketValue: item.marketValue ?? null,
-                      price: item.price ?? null,
-                      sector: item.sector ?? null,
-                      country: item.country ?? null,
-                      currency: item.currency ?? null,
-                    })
-                  }
-                />
-              </article>
-            ))}
-          </section>
-        </main>
-      ) : null}
-
-      {!loading && dashboard && dashboard.indexes.length === 0 && dashboard.portfolios.every((portfolio) => portfolio.companies.length === 0) ? (
-        <section className="empty-dashboard">
-          <SparklesIcon />
-          <div>
-            <h2>Start by refreshing index breakdowns, then stock prices.</h2>
-            <p>The sample config is wired up, but the dashboard stays empty until the first refresh populates SQLite.</p>
-          </div>
-        </section>
-      ) : null}
-
-      <StockModal stock={selectedStock} onClose={() => setSelectedStock(null)} />
-    </div>
+        <StockModal stock={selectedStock} onClose={() => setSelectedStock(null)} />
+      </div>
+    </BrowserRouter>
   );
 }

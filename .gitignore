@@ -1,4 +1,5 @@
 config.yaml
+./user-data
 
 .DS_Store
 .pytest_cache/
