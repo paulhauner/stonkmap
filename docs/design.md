@@ -4,6 +4,8 @@ Stonkmap is a self-hosted, locally-served web application that visualises stock 
 
 The application is not designed to be an exhaustive portfolio management tool, it implements a few features only.
 
+Stonkmap's primary goal is to show an index investor a heatmap of all the actual companies inside their portfolio.
+
 ## Tech Stack
 
 - Backend: Python FastAPI
@@ -14,10 +16,11 @@ The application is not designed to be an exhaustive portfolio management tool, i
 
 ## Configuration
 
-A `config.example.yaml` file is located in the root directory which contains an example configuration file. This should include:
+A `config.example.yaml` file is located in the root directory which contains an example configuration file. The user will port it to a `config.yaml`. This should include:
 
 - The ports for the front and backend.
-- A list of initial indexes to include in the scrape.
+- A list of "portfolio CSV" files that define portfolios.
+    - Each "portfolio CSV" has "exchange, ticker, units" rows.
 
 ## Features
 
@@ -27,7 +30,8 @@ A `config.example.yaml` file is located in the root directory which contains an 
 
 For a given list of indexes, we present the weights of the companies included.
 
-- We find canonical methods for determining the stocks that constitute that index.
+- Only indexes included in a portfolio should have a breakdown.
+- We find canonical methods for determining the stocks that constitute that index (i.e. a "breakdown").
 - We store the latest breakdown for each index, including:
     - Exchange and ticker for the index (e.g. VESG on the ASX)
     - Each company inside that index (e.g. GOOG, APPL)
@@ -40,8 +44,10 @@ For a given list of indexes, we present the weights of the companies included.
 
 For a "portfolio" (a list of stocks/indexes), give breakdowns of the companies included.
 
+- Portfolios are "hard-coded" via the `config.yaml`, the front-end has no ability to add them.
 - Support for multiple named portfolios.
 - A portfolio may include stocks or indexes from multiple exchanges.
+- Indexes in a portfolio should be broken down into their components.
 - Provide a "Stock Heatmap" (See "UI Components" section) for each portfolio.
 
 ### Stock Prices
