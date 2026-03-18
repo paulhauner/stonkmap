@@ -308,6 +308,7 @@ function PortfolioPage({
         title={`${portfolio.name} company exposure`}
         data={portfolio.companies.map(toPortfolioTile)}
         emptyMessage="Price data is missing for this portfolio. Refresh prices to generate a meaningful heatmap."
+        formatValue={(value) => formatMoney(value)}
         onSelect={(item) =>
           onSelectStock({
             exchange: item.exchange,
@@ -322,6 +323,7 @@ function PortfolioPage({
             sources: item.sources ?? [],
           })
         }
+        valueLabel="value"
       />
     </>
   );
@@ -393,6 +395,7 @@ function IndexDetailPage({
       <Heatmap
         title={`${index.ticker} constituents`}
         data={index.constituents.map(toIndexTile)}
+        formatValue={(value) => formatPercent(value)}
         onSelect={(item) =>
           onSelectStock({
             exchange: item.exchange,
@@ -407,6 +410,7 @@ function IndexDetailPage({
             sources: item.sources ?? [],
           })
         }
+        valueLabel="weight"
       />
     </>
   );

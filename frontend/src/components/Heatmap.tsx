@@ -22,6 +22,8 @@ type HeatmapProps = {
   data: HeatmapDatum[];
   onSelect: (item: HeatmapDatum) => void;
   emptyMessage?: string;
+  valueLabel: string;
+  formatValue?: (value: number) => string;
 };
 
 type TooltipState = {
@@ -40,11 +42,37 @@ function tileColor(value: number, maxValue: number) {
   return '#334155';
 }
 
-export function Heatmap({ title, data, onSelect, emptyMessage }: HeatmapProps) {
+export function Heatmap({
+  title,
+  data,
+  onSelect,
+  emptyMessage,
+  valueLabel,
+  formatValue: providedFormatValue,
+}: HeatmapProps) {
   const frameRef = useRef<HTMLDivElement | null>(null);
   const [size, setSize] = useState({ width: 960, height: 340 });
   const [tooltip, setTooltip] = useState<TooltipState>(null);
-  const hasPositiveData = data.some((entry) => entry.size > 0);
+  const [minimumVisibleValue, setMinimumVisibleValue] = useState(0);
+  const [maximumVisibleValue, setMaximumVisibleValue] = useState(0);
+  const maxValue = Math.max(...data.map((entry) => entry.size), 0);
+  const formatValue =
+    providedFormatValue ??
+    ((value: number) =>
+      new Intl.NumberFormat('en-AU', {
+        maximumFractionDigits: 2,
+      }).format(value));
+
+  useEffect(() => {
+    setMinimumVisibleValue(0);
+    setMaximumVisibleValue(maxValue);
+  }, [maxValue, data.length]);
+
+  const filteredData = data.filter(
+    (entry) => entry.size >= minimumVisibleValue && entry.size <= maximumVisibleValue,
+  );
+  const hasPositiveData = filteredData.some((entry) => entry.size > 0);
+  const filterStep = maxValue > 0 ? Math.max(maxValue / 200, 0.01) : 0.01;
 
   useEffect(() => {
     const element = frameRef.current;
@@ -71,7 +99,7 @@ export function Heatmap({ title, data, onSelect, emptyMessage }: HeatmapProps) {
     return () => observer.disconnect();
   }, []);
 
-  const root = hierarchy<HeatmapTreeNode>({ children: data })
+  const rootData = hierarchy<HeatmapTreeNode>({ children: filteredData })
     .sum((entry: HeatmapTreeNode) => ('size' in entry ? Math.max(entry.size, 0.01) : 0))
     .sort(
       (left: HierarchyNode<HeatmapTreeNode>, right: HierarchyNode<HeatmapTreeNode>) =>
@@ -81,19 +109,52 @@ export function Heatmap({ title, data, onSelect, emptyMessage }: HeatmapProps) {
   treemap<HeatmapTreeNode>()
     .size([size.width, size.height])
     .paddingInner(6)
-    .round(true)(root);
+    .round(true)(rootData);
 
-  const leaves = root.leaves() as HierarchyRectangularNode<HeatmapDatum>[];
-  const maxValue = Math.max(...data.map((entry) => entry.size), 0);
+  const leaves = rootData.leaves() as HierarchyRectangularNode<HeatmapDatum>[];
 
   return (
     <section className="heatmap-card">
       <div className="section-heading">
         <h3>{title}</h3>
-        <span>{data.length} companies</span>
+        <span>
+          {filteredData.length} shown of {data.length} companies
+        </span>
+      </div>
+      <div className="heatmap-filters">
+        <label className="heatmap-filter">
+          <span>Hide below {formatValue(minimumVisibleValue)}</span>
+          <input
+            aria-label={`Hide below ${valueLabel}`}
+            max={maximumVisibleValue}
+            min={0}
+            onChange={(event) => {
+              const nextValue = Number(event.target.value);
+              setMinimumVisibleValue(Math.min(nextValue, maximumVisibleValue));
+            }}
+            type="range"
+            step={filterStep}
+            value={minimumVisibleValue}
+          />
+        </label>
+        <label className="heatmap-filter">
+          <span>Hide above {formatValue(maximumVisibleValue)}</span>
+          <input
+            aria-label={`Hide above ${valueLabel}`}
+            max={maxValue}
+            min={minimumVisibleValue}
+            onChange={(event) => {
+              const nextValue = Number(event.target.value);
+              setMaximumVisibleValue(Math.max(nextValue, minimumVisibleValue));
+            }}
+            type="range"
+            step={filterStep}
+            value={maximumVisibleValue}
+          />
+        </label>
       </div>
       <div className="heatmap-frame" ref={frameRef}>
-        {data.length > 0 && hasPositiveData ? (
+        {filteredData.length > 0 && hasPositiveData ? (
           <>
             <svg
               aria-label={title}
@@ -176,6 +237,8 @@ export function Heatmap({ title, data, onSelect, emptyMessage }: HeatmapProps) {
           <div className="empty-state">
             {data.length === 0
               ? 'Refresh the backend data to populate this heatmap.'
+              : filteredData.length === 0
+                ? 'No holdings match the current value filter.'
               : emptyMessage ?? 'There is not enough weighted data to build this heatmap yet.'}
           </div>
         )}

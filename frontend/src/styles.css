@@ -396,6 +396,30 @@ a {
   font-size: 0.9rem;
 }
 
+.heatmap-filters {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.heatmap-filter {
+  display: grid;
+  gap: 10px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: rgba(15, 23, 42, 0.68);
+  border: 1px solid rgba(248, 250, 252, 0.08);
+}
+
+.heatmap-filter span {
+  color: #cbd5e1;
+  font-size: 0.9rem;
+}
+
+.heatmap-filter input[type="range"] {
+  width: 100%;
+}
+
 .heatmap-frame {
   position: relative;
   height: 420px;
@@ -570,6 +594,10 @@ a {
 
   .heatmap-frame {
     height: 360px;
+  }
+
+  .heatmap-filters {
+    grid-template-columns: 1fr;
   }
 
   .modal-grid {
