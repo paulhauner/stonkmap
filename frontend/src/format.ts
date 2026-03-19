@@ -25,3 +25,32 @@ export function formatDateTime(value: string | null) {
     timeStyle: 'short',
   }).format(new Date(value));
 }
+
+export function formatRelativeAge(value: string | null, now = new Date()) {
+  if (!value) {
+    return null;
+  }
+
+  const timestamp = new Date(value);
+  const diffMs = Math.max(0, now.getTime() - timestamp.getTime());
+  const minuteMs = 60 * 1000;
+  const hourMs = 60 * minuteMs;
+  const dayMs = 24 * hourMs;
+
+  if (diffMs < minuteMs) {
+    return 'less than a minute';
+  }
+
+  if (diffMs < hourMs) {
+    const minutes = Math.floor(diffMs / minuteMs);
+    return `${minutes} minute${minutes === 1 ? '' : 's'}`;
+  }
+
+  if (diffMs < dayMs) {
+    const hours = Math.floor(diffMs / hourMs);
+    return `${hours} hour${hours === 1 ? '' : 's'}`;
+  }
+
+  const days = Math.floor(diffMs / dayMs);
+  return `${days} day${days === 1 ? '' : 's'}`;
+}

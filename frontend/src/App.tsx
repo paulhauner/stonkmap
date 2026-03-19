@@ -20,7 +20,7 @@ import { fetchDashboard, refreshMarketData } from './api';
 import { Heatmap } from './components/Heatmap';
 import { StatPill } from './components/StatPill';
 import { StockModal } from './components/StockModal';
-import { formatDateTime, formatMoney, formatPercent } from './format';
+import { formatDateTime, formatMoney, formatPercent, formatRelativeAge } from './format';
 import type {
   CompanyExposure,
   Constituent,
@@ -63,6 +63,29 @@ function portfolioPath(portfolio: PortfolioBreakdown) {
 
 function indexPath(index: IndexBreakdown) {
   return `/indexes/${index.exchange}/${index.ticker}`;
+}
+
+function getMarketDataTimestamp(dashboard: DashboardData) {
+  if (!dashboard.prices_last_updated_at) {
+    return null;
+  }
+
+  if (dashboard.indexes.some((index) => !index.fetched_at)) {
+    return null;
+  }
+
+  const timestamps = [
+    dashboard.prices_last_updated_at,
+    ...dashboard.indexes.map((index) => index.fetched_at).filter((value): value is string => Boolean(value)),
+  ];
+
+  if (timestamps.length === 0) {
+    return null;
+  }
+
+  return timestamps.reduce((oldest, current) =>
+    new Date(current).getTime() < new Date(oldest).getTime() ? current : oldest,
+  );
 }
 
 function buildUnknownIndexesPrompt(unknownIndexes: UnknownIndex[]) {
@@ -164,6 +187,8 @@ function toIndexTile(item: Constituent) {
 function TopBar({ dashboard, busyAction, onRunAction }: Omit<AppRoutesProps, 'onSelectStock'>) {
   const location = useLocation();
   const homePath = dashboard.portfolios[0] ? portfolioPath(dashboard.portfolios[0]) : '/indexes';
+  const marketDataTimestamp = getMarketDataTimestamp(dashboard);
+  const marketDataAge = formatRelativeAge(marketDataTimestamp);
 
   return (
     <nav className="top-bar">
@@ -222,14 +247,21 @@ function TopBar({ dashboard, busyAction, onRunAction }: Omit<AppRoutesProps, 'on
       </PopoverGroup>
 
       <div className="top-bar-actions">
-        <button
-          className="primary-button"
-          onClick={() => void onRunAction()}
-          disabled={busyAction !== null}
-        >
+        <p className="market-data-status">
           <ArrowPathIcon />
-          {busyAction === 'market-data' ? 'Refreshing market data…' : 'Refresh Market Data'}
-        </button>
+          <span>
+            {busyAction === 'market-data'
+              ? 'Refreshing market data…'
+              : marketDataAge
+                ? `Market data is ${marketDataAge} old.`
+                : 'Market data has not been fully refreshed yet.'}
+          </span>{' '}
+          {busyAction === null ? (
+            <button className="text-action" onClick={() => void onRunAction()} type="button">
+              Refresh now.
+            </button>
+          ) : null}
+        </p>
       </div>
     </nav>
   );

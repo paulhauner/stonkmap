@@ -100,9 +100,7 @@ a {
   position: relative;
 }
 
-.nav-button,
-.primary-button,
-.secondary-button {
+.nav-button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -128,8 +126,7 @@ a {
 }
 
 .nav-button svg,
-.primary-button svg,
-.secondary-button svg,
+.market-data-status svg,
 .empty-dashboard svg {
   width: 16px;
   height: 16px;
@@ -165,36 +162,36 @@ a {
   color: #ffffff;
 }
 
-.primary-button {
-  min-height: 36px;
-  padding: 0 12px;
-  border-radius: 10px;
-  border: 1px solid rgba(148, 163, 184, 0.14);
-  background: rgba(255, 255, 255, 0.04);
-  color: #e5e7eb;
-  backdrop-filter: blur(18px);
-}
-
-.secondary-button {
-  min-height: 36px;
-  padding: 0 12px;
-  border-radius: 10px;
-  border: 1px solid rgba(148, 163, 184, 0.14);
-  background: rgba(255, 255, 255, 0.04);
-  color: #e5e7eb;
-  backdrop-filter: blur(18px);
-}
-
-.primary-button:hover,
-.secondary-button:hover {
-  background: rgba(255, 255, 255, 0.08);
-}
-
 .nav-button:disabled,
-.primary-button:disabled,
-.secondary-button:disabled {
+.text-action:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+.market-data-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  color: #94a3b8;
+  font-size: 0.92rem;
+  white-space: nowrap;
+}
+
+.text-action {
+  display: inline;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: #e5e7eb;
+  font: inherit;
+  cursor: pointer;
+}
+
+.text-action:hover,
+.text-action:focus-visible {
+  color: #ffffff;
+  text-decoration: underline;
 }
 
 .eyebrow {
