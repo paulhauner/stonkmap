@@ -46,6 +46,13 @@ function clipIdForTile(id: string) {
   return `heatmap-clip-${id.replace(/[^a-zA-Z0-9_-]/g, '-')}`;
 }
 
+function formatWeightPercentage(value: string | null | undefined) {
+  if (!value) {
+    return null;
+  }
+  return `${Number(value).toFixed(2)}% of portfolio`;
+}
+
 export function Heatmap({
   title,
   data,
@@ -266,6 +273,9 @@ export function Heatmap({
                 <strong>{tooltip.item.ticker}</strong>
                 <span>{tooltip.item.name}</span>
                 <span>{tooltip.item.secondaryLabel}</span>
+                {formatWeightPercentage(tooltip.item.weightPercentage) ? (
+                  <span>{formatWeightPercentage(tooltip.item.weightPercentage)}</span>
+                ) : null}
               </div>
             ) : null}
           </>

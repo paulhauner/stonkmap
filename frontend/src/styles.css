@@ -423,7 +423,6 @@ a {
 .heatmap-frame {
   position: relative;
   height: 420px;
-  border-radius: 18px;
   overflow: hidden;
   background: linear-gradient(180deg, rgba(15, 23, 42, 0.72), rgba(30, 41, 59, 0.36));
 }
