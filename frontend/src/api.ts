@@ -4,7 +4,16 @@ const API_BASE = import.meta.env.VITE_API_BASE_URL ?? '/api';
 
 async function parseResponse(response: Response) {
   if (!response.ok) {
-    throw new Error(`Request failed with status ${response.status}`);
+    let message = `Request failed with status ${response.status}`;
+    try {
+      const payload = await response.json();
+      if (typeof payload?.detail === 'string' && payload.detail) {
+        message = payload.detail;
+      }
+    } catch {
+      // Ignore non-JSON error payloads and fall back to the HTTP status message.
+    }
+    throw new Error(message);
   }
   return response.json();
 }

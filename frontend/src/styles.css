@@ -118,7 +118,6 @@ a {
 .nav-button svg,
 .primary-button svg,
 .secondary-button svg,
-.masthead-panel svg,
 .empty-dashboard svg {
   width: 20px;
   height: 20px;
@@ -174,37 +173,6 @@ a {
   cursor: not-allowed;
 }
 
-.masthead {
-  display: grid;
-  grid-template-columns: minmax(0, 2.1fr) minmax(260px, 0.9fr);
-  gap: 24px;
-  align-items: stretch;
-  margin-top: 18px;
-  padding: 28px;
-  border: 1px solid rgba(248, 250, 252, 0.12);
-  border-radius: 28px;
-  background: linear-gradient(140deg, rgba(15, 23, 42, 0.9), rgba(30, 41, 59, 0.88));
-  box-shadow: 0 30px 80px rgba(2, 6, 23, 0.45);
-}
-
-.masthead h1 {
-  margin: 0;
-  font-size: clamp(2.2rem, 5vw, 4rem);
-  line-height: 0.98;
-  letter-spacing: -0.05em;
-  max-width: 12ch;
-}
-
-.masthead-panel {
-  display: grid;
-  gap: 12px;
-  align-content: start;
-  padding: 18px;
-  border-radius: 22px;
-  background: rgba(15, 23, 42, 0.64);
-  border: 1px solid rgba(248, 250, 252, 0.08);
-}
-
 .eyebrow {
   margin: 0 0 12px;
   text-transform: uppercase;
@@ -216,14 +184,6 @@ a {
 .eyebrow.subtle {
   margin-bottom: 8px;
   color: #94a3b8;
-}
-
-.hero-copy {
-  margin: 18px 0 0;
-  max-width: 58ch;
-  color: #cbd5e1;
-  font-size: 1rem;
-  line-height: 1.65;
 }
 
 .stats-row {
@@ -552,7 +512,6 @@ a {
 
 @media (max-width: 1200px) {
   .top-bar,
-  .masthead,
   .stats-row,
   .index-grid {
     grid-template-columns: 1fr;
@@ -574,7 +533,6 @@ a {
   }
 
   .top-bar,
-  .masthead,
   .panel-card,
   .heatmap-card,
   .modal-panel {

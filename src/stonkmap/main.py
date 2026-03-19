@@ -6,10 +6,11 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from fastapi import FastAPI
+from fastapi import HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
 from .config import IndexConfig, ResolvedAppConfig, load_config, load_index_catalog
-from .dashboard import DashboardService
+from .dashboard import DashboardService, MissingPriceDataError
 from .database import Database
 from .indexes.service import IndexService
 from .portfolio import load_portfolio_holdings
@@ -94,7 +95,10 @@ def create_app(
 
     @app.get("/api/dashboard")
     def dashboard():
-        return services.dashboard_service.build_dashboard().model_dump(mode="json")
+        try:
+            return services.dashboard_service.build_dashboard().model_dump(mode="json")
+        except MissingPriceDataError as error:
+            raise HTTPException(status_code=409, detail=str(error)) from error
 
     @app.get("/api/indexes")
     def indexes():

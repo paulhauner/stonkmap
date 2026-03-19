@@ -103,4 +103,27 @@ describe('App', () => {
     expect(screen.getByDisplayValue(/Update indexes\.yaml for this Stonkmap project\./i)).toBeInTheDocument();
     expect(screen.getByDisplayValue(/- ASX:VGE/i)).toBeInTheDocument();
   });
+
+  it('shows API error details when dashboard loading fails', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: false,
+        json: async () => ({
+          detail:
+            'Missing price quotes for portfolio holdings: Gumtree Proposed 2 NASDAQ:META. Refresh prices before loading the dashboard.',
+        }),
+      }),
+    );
+
+    render(<App />);
+
+    await waitFor(() => {
+      expect(
+        screen.getByText(
+          /Missing price quotes for portfolio holdings: Gumtree Proposed 2 NASDAQ:META/i,
+        ),
+      ).toBeInTheDocument();
+    });
+  });
 });

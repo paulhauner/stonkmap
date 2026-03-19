@@ -1,7 +1,6 @@
 import {
   ArrowPathIcon,
   BanknotesIcon,
-  ChartBarSquareIcon,
   ChevronDownIcon,
   SparklesIcon,
 } from '@heroicons/react/24/outline';
@@ -234,21 +233,6 @@ function TopBar({ dashboard, busyAction, onRunAction }: Omit<AppRoutesProps, 'on
 function PageChrome({ dashboard, children }: { dashboard: DashboardData; children: ReactNode }) {
   return (
     <>
-      <header className="masthead">
-        <div>
-          <p className="eyebrow">Stonkmap</p>
-          <h1>Inspect one portfolio or index at a time.</h1>
-          <p className="hero-copy">
-            Use the top menu to jump between config-defined portfolios and tracked indexes. Refreshes are manual and the latest snapshots stay cached in SQLite.
-          </p>
-        </div>
-        <div className="masthead-panel">
-          <ChartBarSquareIcon />
-          <strong>Heatmap drill-down</strong>
-          <span>Hover for the company name. Click a tile for breakdown details.</span>
-        </div>
-      </header>
-
       <section className="stats-row">
         <StatPill label="Portfolios" value={String(dashboard.portfolios.length)} />
         <StatPill label="Tracked Indexes" value={String(dashboard.indexes.length)} />

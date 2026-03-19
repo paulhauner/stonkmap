@@ -28,15 +28,15 @@ class StaticPriceProvider(PriceProvider):
                 exchange=exchange,
                 ticker=ticker,
                 provider_symbol=f"{ticker}.TEST",
-                price={"A200": "135", "IOZ": "31", "CBA": "137.5", "BHP": "37.7", "MSFT": "489.2"}[
+                price={"A200": "135", "IOZ": "31", "VESG": "102.4", "VGE": "55.6", "CBA": "137.5", "BHP": "37.7", "MSFT": "489.2"}[
                     ticker
                 ],
                 quoted_at="2026-03-18T09:10:00+00:00",
             )
             for exchange, ticker in symbols
-            if ticker in {"A200", "IOZ", "CBA", "BHP", "MSFT"}
+            if ticker in {"A200", "IOZ", "VESG", "VGE", "CBA", "BHP", "MSFT"}
         ]
-        skipped = [item for item in symbols if item[1] not in {"A200", "IOZ", "CBA", "BHP", "MSFT"}]
+        skipped = [item for item in symbols if item[1] not in {"A200", "IOZ", "VESG", "VGE", "CBA", "BHP", "MSFT"}]
         return quotes, skipped
 
 
@@ -161,3 +161,163 @@ portfolios:
         payload = dashboard.json()
         assert payload["portfolios"][0]["unknown_indexes"] == []
         assert payload["unknown_indexes"] == []
+
+
+def test_direct_holdings_merge_with_same_ticker_from_index(tmp_path: Path) -> None:
+    portfolio_csv = tmp_path / "portfolio.csv"
+    portfolio_csv.write_text(
+        "exchange,ticker,units,is_index\nASX,VESG,10,true\nNASDAQ,MSFT,4,false\n"
+    )
+
+    config_path = tmp_path / "config.yaml"
+    config_path.write_text(
+        """
+ports:
+  backend: 18000
+  frontend: 15173
+portfolios:
+  - name: Merge Portfolio
+    csv_path: ./portfolio.csv
+"""
+    )
+    indexes_path = tmp_path / "indexes.yaml"
+    indexes_path.write_text(
+        """
+indexes:
+  - name: Vanguard Ethically Conscious International Shares Index ETF
+    exchange: ASX
+    ticker: VESG
+    holdings:
+      provider: vanguard_personal_json
+      url: https://example.test/vesg.json
+      include_asset_classes:
+        - Equity
+        - Equities
+"""
+    )
+
+    app = create_app(
+        config_path=config_path,
+        indexes_path=indexes_path,
+        database_path=tmp_path / "stonkmap.sqlite3",
+        index_service=IndexService(
+            document_store=StaticDocumentStore(
+                {
+                    "https://example.test/vesg.json": (
+                        FIXTURES / "vanguard_holdings_sample.json"
+                    ).read_text(),
+                }
+            )
+        ),
+        price_provider=StaticPriceProvider(),
+    )
+
+    with TestClient(app) as client:
+        refresh_indexes = client.post("/api/indexes/refresh")
+        assert refresh_indexes.status_code == 200
+
+        refresh_prices = client.post("/api/prices/refresh")
+        assert refresh_prices.status_code == 200
+
+        dashboard = client.get("/api/dashboard")
+        assert dashboard.status_code == 200
+        portfolio = dashboard.json()["portfolios"][0]
+        msft_companies = [company for company in portfolio["companies"] if company["ticker"] == "MSFT"]
+        assert len(msft_companies) == 1
+        assert msft_companies[0]["exchange"] == "NASDAQ"
+        assert sorted(msft_companies[0]["sources"]) == [
+            "Direct holding: NASDAQ:MSFT",
+            "Index ASX:VESG (10 units)",
+        ]
+
+
+def test_same_ticker_from_two_indexes_merges_into_one_company(tmp_path: Path) -> None:
+    portfolio_csv = tmp_path / "portfolio.csv"
+    portfolio_csv.write_text(
+        "exchange,ticker,units,is_index\nASX,A200,10,true\nASX,IOZ,8,true\n"
+    )
+
+    config_path = tmp_path / "config.yaml"
+    config_path.write_text(
+        """
+ports:
+  backend: 18000
+  frontend: 15173
+portfolios:
+  - name: Multi Index Portfolio
+    csv_path: ./portfolio.csv
+"""
+    )
+    indexes_path = write_test_indexes(tmp_path)
+
+    app = create_app(
+        config_path=config_path,
+        indexes_path=indexes_path,
+        database_path=tmp_path / "stonkmap.sqlite3",
+        index_service=IndexService(
+            document_store=StaticDocumentStore(
+                {
+                    "https://example.test/a200.csv": (
+                        FIXTURES / "betashares_sample.csv"
+                    ).read_text(),
+                    "https://example.test/ioz.xml": (
+                        FIXTURES / "blackrock_sample.xml"
+                    ).read_text(),
+                }
+            )
+        ),
+        price_provider=StaticPriceProvider(),
+    )
+
+    with TestClient(app) as client:
+        refresh_indexes = client.post("/api/indexes/refresh")
+        assert refresh_indexes.status_code == 200
+
+        refresh_prices = client.post("/api/prices/refresh")
+        assert refresh_prices.status_code == 200
+
+        dashboard = client.get("/api/dashboard")
+        assert dashboard.status_code == 200
+        portfolio = dashboard.json()["portfolios"][0]
+        cba_companies = [company for company in portfolio["companies"] if company["ticker"] == "CBA"]
+        assert len(cba_companies) == 1
+        assert sorted(cba_companies[0]["sources"]) == [
+            "Index ASX:A200 (10 units)",
+            "Index ASX:IOZ (8 units)",
+        ]
+
+
+def test_dashboard_errors_when_portfolio_holding_quote_is_missing(tmp_path: Path) -> None:
+    portfolio_csv = tmp_path / "portfolio.csv"
+    portfolio_csv.write_text("exchange,ticker,units,is_index\nNASDAQ,META,1222,false\n")
+
+    config_path = tmp_path / "config.yaml"
+    config_path.write_text(
+        """
+ports:
+  backend: 18000
+  frontend: 15173
+portfolios:
+  - name: Missing Quote Portfolio
+    csv_path: ./portfolio.csv
+"""
+    )
+    indexes_path = tmp_path / "indexes.yaml"
+    indexes_path.write_text("indexes: []\n")
+
+    app = create_app(
+        config_path=config_path,
+        indexes_path=indexes_path,
+        database_path=tmp_path / "stonkmap.sqlite3",
+        index_service=IndexService(document_store=StaticDocumentStore({})),
+        price_provider=StaticPriceProvider(),
+    )
+
+    with TestClient(app) as client:
+        refresh_prices = client.post("/api/prices/refresh")
+        assert refresh_prices.status_code == 200
+
+        dashboard = client.get("/api/dashboard")
+        assert dashboard.status_code == 409
+        assert "Missing price quotes for portfolio holdings" in dashboard.json()["detail"]
+        assert "Missing Quote Portfolio NASDAQ:META" in dashboard.json()["detail"]
