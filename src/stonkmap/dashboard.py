@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from collections import defaultdict
 from datetime import datetime, timezone
 from decimal import Decimal
 
@@ -8,6 +7,7 @@ from .config import IndexConfig, ResolvedAppConfig
 from .database import Database
 from .models import (
     CompanyExposure,
+    Constituent,
     DashboardData,
     IndexBreakdown,
     PortfolioBreakdown,
@@ -35,6 +35,15 @@ class DashboardService:
         self.config = config
         self.indexes = indexes
         self.database = database
+        self.ticker_aliases = {
+            stock: combination.combine_as
+            for combination in config.ticker_combinations
+            for stock in combination.stocks
+        }
+        self.combination_lookup = {
+            combination.combine_as: combination
+            for combination in config.ticker_combinations
+        }
 
     def tracked_index_keys(self) -> set[tuple[str, str]]:
         configured_indexes = {(item.exchange, item.ticker) for item in self.indexes}
@@ -54,21 +63,34 @@ class DashboardService:
             if (item.exchange, item.ticker) in tracked
         ]
 
-    @staticmethod
+    def _canonical_ticker(self, ticker: str) -> str:
+        return self.ticker_aliases.get(ticker, ticker)
+
+    def _combined_ticker_name(
+        self, ticker: str, component_tickers: set[str], existing_name: str
+    ) -> str:
+        combination = self.combination_lookup.get(ticker)
+        if combination is None or len(component_tickers) < 2:
+            return existing_name
+        combined_members = [stock for stock in combination.stocks if stock in component_tickers]
+        return f"Combined share classes ({', '.join(combined_members)})"
+
     def _resolve_exposure_key(
+        self,
         exposures: dict[tuple[str | None, str], dict[str, object]],
         exchange: str | None,
         ticker: str,
     ) -> tuple[str | None, str]:
-        exact_key = (exchange, ticker)
+        canonical_ticker = self._canonical_ticker(ticker)
+        exact_key = (exchange, canonical_ticker)
         if exact_key in exposures:
             return exact_key
 
-        same_ticker_keys = [key for key in exposures if key[1] == ticker]
+        same_ticker_keys = [key for key in exposures if key[1] == canonical_ticker]
         if not same_ticker_keys:
             return exact_key
 
-        unknown_key = (None, ticker)
+        unknown_key = (None, canonical_ticker)
         if exchange is not None and unknown_key in exposures:
             payload = exposures.pop(unknown_key)
             payload["exchange"] = exchange
@@ -83,16 +105,31 @@ class DashboardService:
         return exact_key
 
     @staticmethod
+    def _append_source(item: dict[str, object], source: str) -> None:
+        item["sources"].append(source)
+
+    def _register_component_ticker(
+        self, item: dict[str, object], ticker: str
+    ) -> None:
+        combination = self.combination_lookup.get(ticker)
+        if combination is not None:
+            item["component_tickers"].update(combination.stocks)
+            return
+        item["component_tickers"].add(ticker)
+
     def _update_exposure_metadata(
+        self,
         item: dict[str, object],
         *,
         exchange: str | None,
+        ticker: str,
         name: str,
         latest_price: Decimal | None,
         sector: str | None,
         country: str | None,
         currency: str | None,
     ) -> None:
+        self._register_component_ticker(item, ticker)
         if item["exchange"] is None and exchange is not None:
             item["exchange"] = exchange
         if (not item["name"] or item["name"] == item["ticker"]) and name:
@@ -106,8 +143,123 @@ class DashboardService:
         if item["currency"] is None and currency is not None:
             item["currency"] = currency
 
+    def _finalize_exposure_payload(self, payload: dict[str, object]) -> CompanyExposure:
+        component_tickers = payload["component_tickers"]
+        if len(component_tickers) > 1:
+            payload["latest_price"] = None
+            payload["name"] = self._combined_ticker_name(
+                payload["ticker"],
+                component_tickers,
+                payload["name"],
+            )
+        return CompanyExposure(
+            exchange=payload["exchange"],
+            ticker=payload["ticker"],
+            name=payload["name"],
+            market_value=payload["market_value"],
+            weight_percentage=payload["weight_percentage"],
+            latest_price=payload["latest_price"],
+            sector=payload["sector"],
+            country=payload["country"],
+            currency=payload["currency"],
+            sources=sorted(set(payload["sources"])),
+        )
+
+    def _combine_index_breakdown(self, breakdown: IndexBreakdown) -> IndexBreakdown:
+        combined: dict[tuple[str | None, str], dict[str, object]] = {}
+
+        for constituent in breakdown.constituents:
+            key = self._resolve_exposure_key(
+                combined,
+                constituent.exchange,
+                constituent.ticker,
+            )
+            item = combined.setdefault(
+                key,
+                {
+                    "exchange": constituent.exchange,
+                    "ticker": self._canonical_ticker(constituent.ticker),
+                    "name": constituent.name,
+                    "asset_class": constituent.asset_class,
+                    "sector": constituent.sector,
+                    "country": constituent.country,
+                    "currency": constituent.currency,
+                    "latest_price": None,
+                    "weight_percentage": Decimal("0"),
+                    "units_held": Decimal("0"),
+                    "units_held_complete": True,
+                    "market_value": Decimal("0"),
+                    "market_value_complete": True,
+                    "source_ticker": self._canonical_ticker(constituent.ticker),
+                    "source_exchange_code": constituent.source_exchange_code,
+                    "component_tickers": set(),
+                },
+            )
+            self._update_exposure_metadata(
+                item,
+                exchange=constituent.exchange,
+                ticker=constituent.ticker,
+                name=constituent.name,
+                latest_price=None,
+                sector=constituent.sector,
+                country=constituent.country,
+                currency=constituent.currency,
+            )
+            item["weight_percentage"] += constituent.weight_percentage
+            if item["asset_class"] is None and constituent.asset_class is not None:
+                item["asset_class"] = constituent.asset_class
+            if (
+                item["source_exchange_code"] is not None
+                and constituent.source_exchange_code != item["source_exchange_code"]
+            ):
+                item["source_exchange_code"] = None
+            if constituent.units_held is None:
+                item["units_held_complete"] = False
+            elif item["units_held_complete"]:
+                item["units_held"] += constituent.units_held
+            if constituent.market_value is None:
+                item["market_value_complete"] = False
+            elif item["market_value_complete"]:
+                item["market_value"] += constituent.market_value
+
+        constituents = []
+        for payload in combined.values():
+            component_tickers = payload["component_tickers"]
+            name = payload["name"]
+            if len(component_tickers) > 1:
+                name = self._combined_ticker_name(payload["ticker"], component_tickers, name)
+            constituents.append(
+                Constituent(
+                    ticker=payload["ticker"],
+                    exchange=payload["exchange"],
+                    source_ticker=payload["source_ticker"],
+                    source_exchange_code=payload["source_exchange_code"],
+                    name=name,
+                    asset_class=payload["asset_class"],
+                    sector=payload["sector"],
+                    country=payload["country"],
+                    currency=payload["currency"],
+                    weight_percentage=payload["weight_percentage"],
+                    units_held=(
+                        payload["units_held"] if payload["units_held_complete"] else None
+                    ),
+                    market_value=(
+                        payload["market_value"] if payload["market_value_complete"] else None
+                    ),
+                )
+            )
+        constituents.sort(key=lambda item: item.weight_percentage, reverse=True)
+        return IndexBreakdown(
+            name=breakdown.name,
+            exchange=breakdown.exchange,
+            ticker=breakdown.ticker,
+            as_of=breakdown.as_of,
+            fetched_at=breakdown.fetched_at,
+            constituents=constituents,
+        )
+
     def build_dashboard(self) -> DashboardData:
-        indexes = self.list_indexes()
+        indexes = [self._combine_index_breakdown(item) for item in self.list_indexes()]
         index_lookup = {(item.exchange, item.ticker): item for item in indexes}
         configured_index_keys = {(item.exchange, item.ticker) for item in self.indexes}
         price_lookup = {
@@ -145,7 +297,7 @@ class DashboardService:
                         key,
                         {
                             "exchange": holding.exchange,
-                            "ticker": holding.ticker,
+                            "ticker": self._canonical_ticker(holding.ticker),
                             "name": price.name or holding.ticker if price is not None else holding.ticker,
                             "market_value": Decimal("0"),
                             "latest_price": price.price if price is not None else None,
@@ -153,11 +305,13 @@ class DashboardService:
                             "country": None,
                             "currency": price.currency if price is not None else None,
                             "sources": [],
+                            "component_tickers": set(),
                         },
                     )
                     self._update_exposure_metadata(
                         item,
                         exchange=holding.exchange,
+                        ticker=holding.ticker,
                         name=price.name or holding.ticker if price is not None else holding.ticker,
                         latest_price=price.price if price is not None else None,
                         sector=None,
@@ -165,7 +319,10 @@ class DashboardService:
                         currency=price.currency if price is not None else None,
                     )
                     item["market_value"] += position_market_value
-                    item["sources"].append(f"Direct holding: {holding.exchange}:{holding.ticker}")
+                    self._append_source(
+                        item,
+                        f"Direct holding: {holding.exchange}:{holding.ticker}",
+                    )
                     continue
 
                 key = (holding.exchange, holding.ticker)
@@ -201,7 +358,7 @@ class DashboardService:
                         key,
                         {
                             "exchange": constituent.exchange,
-                            "ticker": constituent.ticker,
+                            "ticker": self._canonical_ticker(constituent.ticker),
                             "name": constituent.name,
                             "market_value": Decimal("0"),
                             "latest_price": constituent_price.price if constituent_price is not None else None,
@@ -209,11 +366,13 @@ class DashboardService:
                             "country": constituent.country,
                             "currency": constituent.currency,
                             "sources": [],
+                            "component_tickers": set(),
                         },
                     )
                     self._update_exposure_metadata(
                         item,
                         exchange=constituent.exchange,
+                        ticker=constituent.ticker,
                         name=constituent.name,
                         latest_price=constituent_price.price if constituent_price is not None else None,
                         sector=constituent.sector,
@@ -221,26 +380,21 @@ class DashboardService:
                         currency=constituent.currency,
                     )
                     item["market_value"] += constituent_market_value
-                    item["sources"].append(
+                    self._append_source(
+                        item,
                         f"Index {breakdown.exchange}:{breakdown.ticker} ({holding.units} units)"
                     )
 
             companies = [
-                CompanyExposure(
-                    exchange=payload["exchange"],
-                    ticker=payload["ticker"],
-                    name=payload["name"],
-                    market_value=payload["market_value"],
-                    weight_percentage=(
-                        (payload["market_value"] / total_market_value * Decimal("100"))
-                        if total_market_value > 0
-                        else None
-                    ),
-                    latest_price=payload["latest_price"],
-                    sector=payload["sector"],
-                    country=payload["country"],
-                    currency=payload["currency"],
-                    sources=sorted(set(payload["sources"])),
+                self._finalize_exposure_payload(
+                    payload
+                    | {
+                        "weight_percentage": (
+                            (payload["market_value"] / total_market_value * Decimal("100"))
+                            if total_market_value > 0
+                            else None
+                        )
+                    }
                 )
                 for payload in exposures.values()
             ]

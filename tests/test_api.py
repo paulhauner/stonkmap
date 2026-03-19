@@ -1,12 +1,13 @@
 from __future__ import annotations
 
+from datetime import date, datetime, timezone
 from pathlib import Path
 
 from fastapi.testclient import TestClient
 
 from stonkmap.indexes.service import DocumentStore, IndexService
 from stonkmap.main import create_app
-from stonkmap.models import PriceQuote
+from stonkmap.models import Constituent, IndexBreakdown, PriceQuote
 from stonkmap.prices.service import PriceProvider
 
 
@@ -28,16 +29,27 @@ class StaticPriceProvider(PriceProvider):
                 exchange=exchange,
                 ticker=ticker,
                 provider_symbol=f"{ticker}.TEST",
-                price={"A200": "135", "IOZ": "31", "VESG": "102.4", "VGE": "55.6", "CBA": "137.5", "BHP": "37.7", "MSFT": "489.2"}[
+                price={"A200": "135", "IOZ": "31", "VESG": "102.4", "VGE": "55.6", "CBA": "137.5", "BHP": "37.7", "MSFT": "489.2", "GOOG": "175", "GOOGL": "170", "TESTX": "250"}[
                     ticker
                 ],
                 quoted_at="2026-03-18T09:10:00+00:00",
             )
             for exchange, ticker in symbols
-            if ticker in {"A200", "IOZ", "VESG", "VGE", "CBA", "BHP", "MSFT"}
+            if ticker in {"A200", "IOZ", "VESG", "VGE", "CBA", "BHP", "MSFT", "GOOG", "GOOGL", "TESTX"}
         ]
-        skipped = [item for item in symbols if item[1] not in {"A200", "IOZ", "VESG", "VGE", "CBA", "BHP", "MSFT"}]
+        skipped = [item for item in symbols if item[1] not in {"A200", "IOZ", "VESG", "VGE", "CBA", "BHP", "MSFT", "GOOG", "GOOGL", "TESTX"}]
         return quotes, skipped
+
+
+class StaticIndexBreakdownService:
+    def __init__(self, breakdowns: dict[tuple[str, str], IndexBreakdown]) -> None:
+        self.breakdowns = breakdowns
+
+    def fetch_breakdown(self, index_config):
+        return self.breakdowns[(index_config.exchange, index_config.ticker)]
+
+    def close(self) -> None:
+        return None
 
 
 def write_test_config(tmp_path: Path) -> Path:
@@ -321,3 +333,142 @@ portfolios:
         assert dashboard.status_code == 409
         assert "Missing price quotes for portfolio holdings" in dashboard.json()["detail"]
         assert "Missing Quote Portfolio NASDAQ:META" in dashboard.json()["detail"]
+
+
+def test_direct_holdings_can_be_combined_via_config(tmp_path: Path) -> None:
+    portfolio_csv = tmp_path / "portfolio.csv"
+    portfolio_csv.write_text(
+        "exchange,ticker,units,is_index\nNASDAQ,GOOG,2,false\nNASDAQ,GOOGL,3,false\n"
+    )
+
+    config_path = tmp_path / "config.yaml"
+    config_path.write_text(
+        """
+ports:
+  backend: 18000
+  frontend: 15173
+portfolios:
+  - name: Alphabet Portfolio
+    csv_path: ./portfolio.csv
+ticker_combinations:
+  - stocks: [GOOGL, GOOG]
+    combine_as: GOOG(L)
+"""
+    )
+    indexes_path = tmp_path / "indexes.yaml"
+    indexes_path.write_text("indexes: []\n")
+
+    app = create_app(
+        config_path=config_path,
+        indexes_path=indexes_path,
+        database_path=tmp_path / "stonkmap.sqlite3",
+        index_service=IndexService(document_store=StaticDocumentStore({})),
+        price_provider=StaticPriceProvider(),
+    )
+
+    with TestClient(app) as client:
+        refresh_prices = client.post("/api/prices/refresh")
+        assert refresh_prices.status_code == 200
+
+        dashboard = client.get("/api/dashboard")
+        assert dashboard.status_code == 200
+        portfolio = dashboard.json()["portfolios"][0]
+        assert [company["ticker"] for company in portfolio["companies"]] == ["GOOG(L)"]
+        assert portfolio["companies"][0]["latest_price"] is None
+        assert portfolio["companies"][0]["market_value"] == "860"
+        assert sorted(portfolio["companies"][0]["sources"]) == [
+            "Direct holding: NASDAQ:GOOG",
+            "Direct holding: NASDAQ:GOOGL",
+        ]
+
+
+def test_index_constituents_can_be_combined_via_config(tmp_path: Path) -> None:
+    portfolio_csv = tmp_path / "portfolio.csv"
+    portfolio_csv.write_text("exchange,ticker,units,is_index\nNASDAQ,TESTX,1,true\n")
+
+    config_path = tmp_path / "config.yaml"
+    config_path.write_text(
+        """
+ports:
+  backend: 18000
+  frontend: 15173
+portfolios:
+  - name: Combined Index Portfolio
+    csv_path: ./portfolio.csv
+ticker_combinations:
+  - stocks: [GOOGL, GOOG]
+    combine_as: GOOG(L)
+"""
+    )
+    indexes_path = tmp_path / "indexes.yaml"
+    indexes_path.write_text(
+        """
+indexes:
+  - name: Test Alphabet Index
+    exchange: NASDAQ
+    ticker: TESTX
+    holdings:
+      provider: betashares_csv
+      url: https://example.test/testx.csv
+"""
+    )
+
+    breakdown = IndexBreakdown(
+        name="Test Alphabet Index",
+        exchange="NASDAQ",
+        ticker="TESTX",
+        as_of=date(2026, 3, 18),
+        fetched_at=datetime(2026, 3, 18, 9, 0, tzinfo=timezone.utc),
+        constituents=[
+            Constituent(
+                ticker="GOOG",
+                exchange="NASDAQ",
+                source_ticker="GOOG UW",
+                source_exchange_code="UW",
+                name="Alphabet Inc. Class C",
+                asset_class="Equities",
+                sector="Communication Services",
+                country="United States",
+                currency="USD",
+                weight_percentage="60",
+                units_held="10",
+                market_value="1500",
+            ),
+            Constituent(
+                ticker="GOOGL",
+                exchange="NASDAQ",
+                source_ticker="GOOGL UW",
+                source_exchange_code="UW",
+                name="Alphabet Inc. Class A",
+                asset_class="Equities",
+                sector="Communication Services",
+                country="United States",
+                currency="USD",
+                weight_percentage="40",
+                units_held="8",
+                market_value="1200",
+            ),
+        ],
+    )
+
+    app = create_app(
+        config_path=config_path,
+        indexes_path=indexes_path,
+        database_path=tmp_path / "stonkmap.sqlite3",
+        index_service=StaticIndexBreakdownService({("NASDAQ", "TESTX"): breakdown}),
+        price_provider=StaticPriceProvider(),
+    )
+
+    with TestClient(app) as client:
+        refresh_indexes = client.post("/api/indexes/refresh")
+        assert refresh_indexes.status_code == 200
+
+        refresh_prices = client.post("/api/prices/refresh")
+        assert refresh_prices.status_code == 200
+
+        dashboard = client.get("/api/dashboard")
+        assert dashboard.status_code == 200
+        payload = dashboard.json()
+        assert [item["ticker"] for item in payload["indexes"][0]["constituents"]] == ["GOOG(L)"]
+        assert payload["indexes"][0]["constituents"][0]["weight_percentage"] == "100"
+        assert [item["ticker"] for item in payload["portfolios"][0]["companies"]] == ["GOOG(L)"]

@@ -4,6 +4,10 @@ ports:
 
 # Copy this file to config.yaml and update the portfolio CSV paths for your setup.
 # Portfolio CSV columns must be: exchange,ticker,units,is_index
+ticker_combinations:
+  - stocks: [GOOGL, GOOG]
+    combine_as: GOOG(L)
+
 portfolios:
   - name: Core Portfolio
     csv_path: ./sample-data/core-portfolio.csv

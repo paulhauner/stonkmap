@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Literal
 
 import yaml
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 
 SUPPORTED_HOLDINGS_PROVIDERS = (
@@ -63,6 +63,35 @@ class PortfolioConfig(BaseModel):
     csv_path: Path
 
 
+class TickerCombinationConfig(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    stocks: list[str]
+    combine_as: str
+
+    @field_validator("stocks")
+    @classmethod
+    def normalize_stocks(cls, value: list[str]) -> list[str]:
+        normalized: list[str] = []
+        for item in value:
+            ticker = item.strip().upper()
+            if not ticker:
+                raise ValueError("ticker combinations must not contain empty symbols")
+            if ticker not in normalized:
+                normalized.append(ticker)
+        if len(normalized) < 2:
+            raise ValueError("ticker combinations must contain at least two unique stocks")
+        return normalized
+
+    @field_validator("combine_as")
+    @classmethod
+    def normalize_combine_as(cls, value: str) -> str:
+        ticker = value.strip().upper()
+        if not ticker:
+            raise ValueError("combine_as must not be empty")
+        return ticker
+
+
 class PortsConfig(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -75,6 +104,20 @@ class AppConfig(BaseModel):
 
     ports: PortsConfig
     portfolios: list[PortfolioConfig]
+    ticker_combinations: list[TickerCombinationConfig] = Field(default_factory=list)
+
+    @model_validator(mode="after")
+    def validate_ticker_combinations(self) -> "AppConfig":
+        seen_stocks: dict[str, str] = {}
+        for combination in self.ticker_combinations:
+            for stock in combination.stocks:
+                previous = seen_stocks.get(stock)
+                if previous is not None:
+                    raise ValueError(
+                        f"ticker {stock} appears in multiple ticker_combinations: {previous} and {combination.combine_as}"
+                    )
+                seen_stocks[stock] = combination.combine_as
+        return self
 
     def resolve_paths(self, root: Path) -> "ResolvedAppConfig":
         return ResolvedAppConfig(
@@ -83,6 +126,7 @@ class AppConfig(BaseModel):
                 ResolvedPortfolioConfig(name=item.name, csv_path=(root / item.csv_path).resolve())
                 for item in self.portfolios
             ],
+            ticker_combinations=self.ticker_combinations,
         )
 
 
@@ -98,6 +142,7 @@ class ResolvedAppConfig(BaseModel):
 
     ports: PortsConfig
     portfolios: list[ResolvedPortfolioConfig]
+    ticker_combinations: list[TickerCombinationConfig] = Field(default_factory=list)
 
 
 class IndexCatalog(BaseModel):
