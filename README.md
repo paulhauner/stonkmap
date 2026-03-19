@@ -4,6 +4,10 @@ Stonkmap is a self-hosted app for visualising the actual company exposure inside
 
 Proudly vibe-coded. Use your own LLM to tweak it to your taste.
 
+## Screenshot
+
+![Core Portfolio heatmap](./docs/core-portfolio.png)
+
 ## Docker Compose
 
 `docker compose up --build`
