@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 
 import App from './App';
 
@@ -98,10 +98,52 @@ describe('App', () => {
     });
 
     expect(screen.getByRole('button', { name: /portfolios/i })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /indexes/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /indexes/i })).toBeInTheDocument();
     expect(screen.getByText('Core Portfolio company exposure')).toBeInTheDocument();
     expect(screen.getByDisplayValue(/Update indexes\.yaml for this Stonkmap project\./i)).toBeInTheDocument();
     expect(screen.getByDisplayValue(/- ASX:VGE/i)).toBeInTheDocument();
+  });
+
+  it('refreshes index and price data through the single market-data action', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => dashboardPayload,
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({}),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({}),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => dashboardPayload,
+      });
+
+    vi.stubGlobal('fetch', fetchMock);
+
+    render(<App />);
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /refresh market data/i })).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /refresh market data/i }));
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledTimes(4);
+    });
+
+    expect(fetchMock).toHaveBeenNthCalledWith(2, expect.stringMatching(/\/indexes\/refresh$/), {
+      method: 'POST',
+    });
+    expect(fetchMock).toHaveBeenNthCalledWith(3, expect.stringMatching(/\/prices\/refresh$/), {
+      method: 'POST',
+    });
   });
 
   it('shows API error details when dashboard loading fails', async () => {

@@ -1,10 +1,9 @@
 import {
   ArrowPathIcon,
-  BanknotesIcon,
   ChevronDownIcon,
   SparklesIcon,
 } from '@heroicons/react/24/outline';
-import { Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/react';
+import { Popover, PopoverButton, PopoverGroup, PopoverPanel } from '@headlessui/react';
 import { type ReactNode, useEffect, useState } from 'react';
 import {
   BrowserRouter,
@@ -17,7 +16,7 @@ import {
   useParams,
 } from 'react-router-dom';
 
-import { fetchDashboard, refreshIndexes, refreshPrices } from './api';
+import { fetchDashboard, refreshMarketData } from './api';
 import { Heatmap } from './components/Heatmap';
 import { StatPill } from './components/StatPill';
 import { StockModal } from './components/StockModal';
@@ -46,8 +45,8 @@ type SelectedStock = {
 
 type AppRoutesProps = {
   dashboard: DashboardData;
-  busyAction: 'indexes' | 'prices' | null;
-  onRunAction: (action: 'indexes' | 'prices') => Promise<void>;
+  busyAction: 'market-data' | null;
+  onRunAction: () => Promise<void>;
   onSelectStock: (stock: SelectedStock) => void;
 };
 
@@ -176,54 +175,60 @@ function TopBar({ dashboard, busyAction, onRunAction }: Omit<AppRoutesProps, 'on
         </span>
       </Link>
 
-      <div className="top-bar-links">
-        <Menu as="div" className="nav-menu">
-          <MenuButton className="nav-button">
+      <PopoverGroup className="top-bar-links">
+        <Popover className="nav-menu">
+          <PopoverButton className="nav-button">
             Portfolios
             <ChevronDownIcon />
-          </MenuButton>
-          <MenuItems anchor="bottom start" className="dropdown-menu">
+          </PopoverButton>
+          <PopoverPanel anchor="bottom start" className="dropdown-menu">
             {dashboard.portfolios.map((portfolio) => {
               const path = portfolioPath(portfolio);
               const active = location.pathname === path;
               return (
-                <MenuItem key={portfolio.name}>
-                  {({ focus }) => (
-                    <Link className={`dropdown-item${focus || active ? ' is-active' : ''}`} to={path}>
-                      <span>{portfolio.name}</span>
-                      <small>{portfolio.holdings.length} holdings</small>
-                    </Link>
-                  )}
-                </MenuItem>
+                <Link className={`dropdown-item${active ? ' is-active' : ''}`} key={portfolio.name} to={path}>
+                  <span>{portfolio.name}</span>
+                  <small>{portfolio.holdings.length} holdings</small>
+                </Link>
               );
             })}
-          </MenuItems>
-        </Menu>
+          </PopoverPanel>
+        </Popover>
 
-        <NavLink
-          className={({ isActive }) => `nav-button${isActive ? ' is-active' : ''}`}
-          to="/indexes"
-        >
-          Indexes
-        </NavLink>
-      </div>
+        <Popover className="nav-menu">
+          <PopoverButton className={`nav-button${location.pathname.startsWith('/indexes') ? ' is-active' : ''}`}>
+            Indexes
+            <ChevronDownIcon />
+          </PopoverButton>
+          <PopoverPanel anchor="bottom start" className="dropdown-menu">
+            <NavLink className="dropdown-item" to="/indexes">
+              <span>All indexes</span>
+              <small>{dashboard.indexes.length} tracked</small>
+            </NavLink>
+            {dashboard.indexes.map((index) => {
+              const path = indexPath(index);
+              const active = location.pathname === path;
+              return (
+                <Link className={`dropdown-item${active ? ' is-active' : ''}`} key={path} to={path}>
+                  <span>
+                    {index.exchange}:{index.ticker}
+                  </span>
+                  <small>{index.name}</small>
+                </Link>
+              );
+            })}
+          </PopoverPanel>
+        </Popover>
+      </PopoverGroup>
 
       <div className="top-bar-actions">
         <button
           className="primary-button"
-          onClick={() => void onRunAction('indexes')}
+          onClick={() => void onRunAction()}
           disabled={busyAction !== null}
         >
           <ArrowPathIcon />
-          {busyAction === 'indexes' ? 'Refreshing indexes…' : 'Refresh Indexes'}
-        </button>
-        <button
-          className="secondary-button"
-          onClick={() => void onRunAction('prices')}
-          disabled={busyAction !== null}
-        >
-          <BanknotesIcon />
-          {busyAction === 'prices' ? 'Refreshing prices…' : 'Refresh Prices'}
+          {busyAction === 'market-data' ? 'Refreshing market data…' : 'Refresh Market Data'}
         </button>
       </div>
     </nav>
@@ -441,7 +446,7 @@ export default function App() {
   const [dashboard, setDashboard] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [busyAction, setBusyAction] = useState<'indexes' | 'prices' | null>(null);
+  const [busyAction, setBusyAction] = useState<'market-data' | null>(null);
   const [selectedStock, setSelectedStock] = useState<SelectedStock | null>(null);
 
   async function loadDashboard() {
@@ -460,14 +465,10 @@ export default function App() {
     void loadDashboard();
   }, []);
 
-  async function runAction(action: 'indexes' | 'prices') {
-    setBusyAction(action);
+  async function runAction() {
+    setBusyAction('market-data');
     try {
-      if (action === 'indexes') {
-        await refreshIndexes();
-      } else {
-        await refreshPrices();
-      }
+      await refreshMarketData();
       await loadDashboard();
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : 'Refresh failed');
@@ -498,7 +499,7 @@ export default function App() {
           <section className="empty-dashboard">
             <SparklesIcon />
             <div>
-              <h2>Start by refreshing index breakdowns, then stock prices.</h2>
+              <h2>Start by refreshing market data.</h2>
               <p>The sample config is wired up, but the dashboard stays empty until the first refresh populates SQLite.</p>
             </div>
           </section>

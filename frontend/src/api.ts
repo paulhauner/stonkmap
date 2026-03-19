@@ -37,3 +37,8 @@ export async function refreshPrices(): Promise<void> {
     }),
   );
 }
+
+export async function refreshMarketData(): Promise<void> {
+  await refreshIndexes();
+  await refreshPrices();
+}

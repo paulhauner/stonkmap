@@ -1,10 +1,10 @@
 :root {
   font-family: "IBM Plex Sans", "Segoe UI", sans-serif;
-  color: #f8fafc;
+  color: #e5e7eb;
   background:
-    radial-gradient(circle at top left, rgba(15, 118, 110, 0.28), transparent 35%),
-    radial-gradient(circle at bottom right, rgba(234, 88, 12, 0.22), transparent 40%),
-    #0f172a;
+    radial-gradient(circle at top left, rgba(148, 163, 184, 0.08), transparent 28%),
+    radial-gradient(circle at top right, rgba(30, 41, 59, 0.2), transparent 32%),
+    linear-gradient(180deg, #020617 0%, #0f172a 100%);
   color-scheme: dark;
 }
 
@@ -42,44 +42,54 @@ a {
 .top-bar {
   display: grid;
   grid-template-columns: auto 1fr auto;
-  gap: 18px;
+  gap: 20px;
   align-items: center;
   padding: 14px 18px;
-  border: 1px solid rgba(248, 250, 252, 0.09);
-  border-radius: 24px;
-  background: rgba(15, 23, 42, 0.82);
-  box-shadow: 0 18px 60px rgba(2, 6, 23, 0.24);
+  border: 1px solid rgba(148, 163, 184, 0.12);
+  border-radius: 16px;
+  background: rgba(15, 23, 42, 0.5);
+  backdrop-filter: blur(18px);
+  box-shadow: 0 12px 32px rgba(2, 6, 23, 0.18);
 }
 
 .brand-link {
   display: inline-flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
 }
 
 .brand-mark {
   display: grid;
   place-items: center;
-  width: 44px;
-  height: 44px;
-  border-radius: 14px;
-  background: linear-gradient(135deg, #14b8a6, #0f766e);
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  font-size: 0.86rem;
   font-weight: 700;
 }
 
 .brand-copy {
   display: grid;
+  gap: 2px;
+}
+
+.brand-copy strong {
+  font-size: 0.96rem;
+  font-weight: 600;
 }
 
 .brand-copy small {
   color: #94a3b8;
+  font-size: 0.78rem;
 }
 
 .top-bar-links,
 .top-bar-actions {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 18px;
 }
 
 .top-bar-links {
@@ -96,74 +106,88 @@ a {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
-  min-height: 48px;
-  border-radius: 16px;
-  border: 1px solid transparent;
-  padding: 0 16px;
-  transition: transform 160ms ease, border-color 160ms ease, opacity 160ms ease;
+  gap: 8px;
+  min-height: 32px;
+  border: 0;
+  padding: 0;
+  transition: color 160ms ease, opacity 160ms ease, background-color 160ms ease;
 }
 
 .nav-button {
-  background: rgba(30, 41, 59, 0.9);
-  border-color: rgba(248, 250, 252, 0.09);
-  color: #f8fafc;
+  background: transparent;
+  color: #cbd5e1;
+  font-size: 0.95rem;
+  font-weight: 500;
 }
 
+.nav-button:hover,
+.nav-button:focus-visible,
+.nav-button[data-open],
 .nav-button.is-active {
-  border-color: rgba(20, 184, 166, 0.45);
-  color: #99f6e4;
+  color: #ffffff;
 }
 
 .nav-button svg,
 .primary-button svg,
 .secondary-button svg,
 .empty-dashboard svg {
-  width: 20px;
-  height: 20px;
+  width: 16px;
+  height: 16px;
 }
 
 .dropdown-menu {
   display: grid;
-  gap: 6px;
-  width: 280px;
-  padding: 10px;
-  border: 1px solid rgba(248, 250, 252, 0.1);
-  border-radius: 18px;
-  background: rgba(15, 23, 42, 0.98);
-  box-shadow: 0 24px 60px rgba(2, 6, 23, 0.42);
+  gap: 4px;
+  width: 320px;
+  padding: 8px;
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  border-radius: 16px;
+  background: rgba(15, 23, 42, 0.78);
+  backdrop-filter: blur(18px);
+  box-shadow: 0 24px 60px rgba(2, 6, 23, 0.36);
 }
 
 .dropdown-item {
   display: grid;
   gap: 4px;
-  padding: 12px 14px;
-  border-radius: 14px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  color: #cbd5e1;
 }
 
 .dropdown-item small {
   color: #94a3b8;
 }
 
+.dropdown-item:hover,
 .dropdown-item.is-active {
-  background: rgba(20, 184, 166, 0.14);
+  background: rgba(255, 255, 255, 0.06);
+  color: #ffffff;
 }
 
 .primary-button {
-  background: linear-gradient(135deg, #14b8a6, #0f766e);
-  color: #f8fafc;
+  min-height: 36px;
+  padding: 0 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  background: rgba(255, 255, 255, 0.04);
+  color: #e5e7eb;
+  backdrop-filter: blur(18px);
 }
 
 .secondary-button {
-  background: rgba(30, 41, 59, 0.9);
-  color: #f8fafc;
-  border-color: rgba(248, 250, 252, 0.12);
+  min-height: 36px;
+  padding: 0 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  background: rgba(255, 255, 255, 0.04);
+  color: #e5e7eb;
+  backdrop-filter: blur(18px);
 }
 
-.nav-button:hover,
 .primary-button:hover,
 .secondary-button:hover {
-  transform: translateY(-1px);
+  background: rgba(255, 255, 255, 0.08);
 }
 
 .nav-button:disabled,
@@ -177,7 +201,7 @@ a {
   margin: 0 0 12px;
   text-transform: uppercase;
   letter-spacing: 0.22em;
-  color: #fdba74;
+  color: #94a3b8;
   font-size: 0.78rem;
 }
 
@@ -197,9 +221,10 @@ a {
   display: grid;
   gap: 8px;
   padding: 16px 18px;
-  border-radius: 20px;
-  background: rgba(15, 23, 42, 0.72);
-  border: 1px solid rgba(248, 250, 252, 0.09);
+  border-radius: 16px;
+  background: rgba(15, 23, 42, 0.46);
+  border: 1px solid rgba(148, 163, 184, 0.12);
+  backdrop-filter: blur(18px);
 }
 
 .stat-pill span {
@@ -216,13 +241,14 @@ a {
 .empty-dashboard {
   margin-top: 18px;
   padding: 18px 20px;
-  border-radius: 20px;
-  border: 1px solid rgba(248, 250, 252, 0.12);
-  background: rgba(15, 23, 42, 0.72);
+  border-radius: 16px;
+  border: 1px solid rgba(148, 163, 184, 0.12);
+  background: rgba(15, 23, 42, 0.46);
+  backdrop-filter: blur(18px);
 }
 
 .error-banner {
-  border-color: rgba(248, 113, 113, 0.45);
+  border-color: rgba(248, 113, 113, 0.28);
   color: #fecaca;
 }
 
@@ -237,14 +263,15 @@ a {
   display: grid;
   gap: 18px;
   padding: 22px;
-  border-radius: 24px;
-  border: 1px solid rgba(248, 250, 252, 0.09);
-  background: rgba(15, 23, 42, 0.84);
+  border-radius: 16px;
+  border: 1px solid rgba(148, 163, 184, 0.12);
+  background: rgba(15, 23, 42, 0.46);
+  backdrop-filter: blur(18px);
 }
 
 .warning-card {
-  border-color: rgba(251, 191, 36, 0.28);
-  background: linear-gradient(180deg, rgba(120, 53, 15, 0.22), rgba(15, 23, 42, 0.84));
+  border-color: rgba(250, 204, 21, 0.22);
+  background: rgba(15, 23, 42, 0.56);
 }
 
 .panel-header {
@@ -286,13 +313,13 @@ a {
   display: grid;
   gap: 4px;
   padding: 12px 14px;
-  border-radius: 16px;
-  background: rgba(30, 41, 59, 0.84);
-  border: 1px solid rgba(248, 250, 252, 0.07);
+  border-radius: 12px;
+  background: rgba(30, 41, 59, 0.52);
+  border: 1px solid rgba(148, 163, 184, 0.1);
 }
 
 .warning-chip {
-  background: rgba(120, 53, 15, 0.38);
+  background: rgba(120, 53, 15, 0.26);
 }
 
 .copy-actions {
@@ -311,10 +338,10 @@ a {
   width: 100%;
   min-height: 220px;
   resize: vertical;
-  border: 1px solid rgba(248, 250, 252, 0.12);
-  border-radius: 16px;
+  border: 1px solid rgba(148, 163, 184, 0.12);
+  border-radius: 12px;
   padding: 14px 16px;
-  background: rgba(15, 23, 42, 0.78);
+  background: rgba(2, 6, 23, 0.42);
   color: #e2e8f0;
   font: inherit;
   line-height: 1.45;
@@ -366,9 +393,9 @@ a {
   display: grid;
   gap: 10px;
   padding: 14px 16px;
-  border-radius: 16px;
-  background: rgba(15, 23, 42, 0.68);
-  border: 1px solid rgba(248, 250, 252, 0.08);
+  border-radius: 12px;
+  background: rgba(15, 23, 42, 0.38);
+  border: 1px solid rgba(148, 163, 184, 0.12);
 }
 
 .heatmap-filter span {
@@ -384,7 +411,8 @@ a {
   position: relative;
   height: 420px;
   overflow: hidden;
-  background: linear-gradient(180deg, rgba(15, 23, 42, 0.72), rgba(30, 41, 59, 0.36));
+  background: rgba(2, 6, 23, 0.26);
+  border: 1px solid rgba(148, 163, 184, 0.1);
 }
 
 .heatmap-svg {
@@ -414,8 +442,7 @@ a {
   height: 100%;
   text-align: center;
   color: #94a3b8;
-  border-radius: 18px;
-  background: rgba(30, 41, 59, 0.4);
+  background: rgba(15, 23, 42, 0.24);
 }
 
 .heatmap-tooltip {
@@ -424,9 +451,10 @@ a {
   gap: 4px;
   min-width: 180px;
   padding: 10px 12px;
-  border-radius: 14px;
-  background: rgba(15, 23, 42, 0.96);
-  border: 1px solid rgba(248, 250, 252, 0.12);
+  border-radius: 12px;
+  background: rgba(15, 23, 42, 0.88);
+  border: 1px solid rgba(148, 163, 184, 0.12);
+  backdrop-filter: blur(18px);
   pointer-events: none;
   box-shadow: 0 16px 30px rgba(2, 6, 23, 0.32);
 }
@@ -470,9 +498,10 @@ a {
 .modal-panel {
   width: min(560px, 100%);
   padding: 28px;
-  border-radius: 24px;
-  border: 1px solid rgba(248, 250, 252, 0.1);
-  background: linear-gradient(160deg, rgba(15, 23, 42, 0.98), rgba(30, 41, 59, 0.98));
+  border-radius: 16px;
+  border: 1px solid rgba(148, 163, 184, 0.12);
+  background: rgba(15, 23, 42, 0.72);
+  backdrop-filter: blur(20px);
   box-shadow: 0 40px 100px rgba(2, 6, 23, 0.45);
 }
 
@@ -537,7 +566,7 @@ a {
   .heatmap-card,
   .modal-panel {
     padding: 18px;
-    border-radius: 20px;
+    border-radius: 16px;
   }
 
   .panel-header {
@@ -547,6 +576,10 @@ a {
   .panel-meta {
     justify-items: start;
     text-align: left;
+  }
+
+  .brand-copy small {
+    display: none;
   }
 
   .heatmap-frame {
